@@ -1,7 +1,7 @@
 from urllib.error import HTTPError
 from urllib.request import urlopen
 import json
-from glob import glob
+from pathlib import Path
 
 import pandas as pd
 import numpy as np
@@ -13,23 +13,24 @@ import plotly.express as px
 
 # -----------------------------------------------------------------------------
 
-# TODO: Implement Path with pathlib
+HERE = Path(__file__).parent
+DATA_FOLDER = HERE / "data"
 
 # Get Maryland counties layer as geojson
 # source: frankrowe GH (see README)
-GEOJSON_PATH = "data/maryland-counties.geojson"
+GEOJSON_PATH = DATA_FOLDER / "maryland-counties.geojson"
 
 # Total population by county
-TOTAL_POP_PATH = "data/Population_Estimates_by_County.csv"
+TOTAL_POP_PATH = DATA_FOLDER / "Population_Estimates_by_County.csv"
 
 # COVID-19 Data
-LOCAL_DATA_PATH = glob("*/MD_COVID19_*")[0]
+LOCAL_DATA_PATH = list(DATA_FOLDER.glob("MD_COVID19_*"))[0]
 
 # Get updated COVID-19 data from maryland.gov
 DATA_URL = "https://opendata.arcgis.com/datasets/89c9c1236ca848188d93beb5928f4162_0.csv"
 
 
-with open(GEOJSON_PATH) as f:
+with open(GEOJSON_PATH.resolve()) as f:
     counties = json.load(f)
 
 # Attempt to get updated csv from URL, default to most recent local copy if request fails
@@ -47,7 +48,7 @@ except HTTPError as e:
     print("Reading from backup...")
     # Read csv from local backup
     df = pd.read_csv(
-        LOCAL_DATA_PATH,
+        LOCAL_DATA_PATH.resolve(),
         dtype={"County": str}
     )
     print("SUCCESS: Read local copy from backup")
@@ -75,7 +76,7 @@ numdate = [x for x in range(len(df["VACCINATION_DATE"].unique()))]
 
 # Build dataframe of all county population to get percentages
 # Link: https://www.census.gov/search-results.html?q=maryland+population+by+county&page=1&stateGeo=none&searchtype=web&cssp=SERP&_charset_=UTF-8
-total_pop_by_county = pd.read_csv(TOTAL_POP_PATH)
+total_pop_by_county = pd.read_csv(TOTAL_POP_PATH.resolve())
 print(total_pop_by_county)
 
 # -----------------------------------------------------------------------------
