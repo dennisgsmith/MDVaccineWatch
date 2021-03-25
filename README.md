@@ -24,7 +24,7 @@ The slider and radio buttons call `display_choropleth` when their values are cha
 
 
 ### Credits
-The `geojson` mask of Maryland counties is provided courtesy of frankrowe.
+The `geojson` mask of Maryland counties is provided courtesy of @frankrowe (https://github.com/frankrowe/maryland-geojson/blob/master/maryland-counties.geojson).
 
 Vaccination data is provided by Maryland State Gov. (https://data.imap.maryland.gov/)
 
