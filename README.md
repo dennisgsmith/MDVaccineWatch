@@ -3,7 +3,7 @@ Tracking Maryland COVID-19 vaccine data by county in real time with Plotly Dash.
 
 
 ### ETL
-`pandas` queries, cleans and aggregates data from mulitple sources, thens loads them into dataframes. The vaccine data automatically updates when the program is run by passing the cav query direcly into `pd.read_csv(url)`.
+`pandas` queries, cleans and aggregates data from mulitple sources, thens loads them into dataframes. The vaccine data automatically updates when the program is run by passing the cav query direcly into `pd.read_csv(url)`. If the request is successful, the file is saved locally (and overwrites older version if one exists). If an `HTTPError` is raised, a dataframe will be created from the local `csv`.
 
 
 `numdate` creates a unique index of each date in in the dataframe to make it easier to interface with intercative `dash.dcc` dash core components.

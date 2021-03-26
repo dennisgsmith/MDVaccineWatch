@@ -51,6 +51,7 @@ body {
 
 .flex-container {
   display: flex;
+  font-size: smaller;
 }
 
 .header-description {
