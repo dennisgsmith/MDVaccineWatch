@@ -28,34 +28,39 @@ POP_EST_PATH = DATA_FOLDER / "Population_Estimates_by_County.csv"
 # COVID-19 Data
 LOCAL_DATA_PATH = list(DATA_FOLDER.glob("MD_COVID19_*"))[0]
 
-# Get updated COVID-19 data from maryland.gov
+# Get updated COVID-19 data from https://data.imap.maryland.gov/
 DATA_URL = "https://opendata.arcgis.com/datasets/89c9c1236ca848188d93beb5928f4162_0.csv"
 
-
+# Load GeoJSON from local data file
 with open(GEOJSON_PATH.resolve()) as f:
     counties = json.load(f)
 
+# Build dataframe of all county population to get percentages
+# Source: https://www.census.gov/
+pop_est_by_county = pd.read_csv(POP_EST_PATH.resolve(), dtype={"Population": int})
+
 # Attempt to get updated csv from URL, default to most recent local copy if request fails
 try:
-    # Pandas reads URL input
-    df = pd.read_csv(DATA_URL, dtype={"County": str})
+    df = pd.read_csv(DATA_URL, dtype={"County": str})  # Pandas reads directly from URL input
     print("SUCCESS: DATA URL Working")
 
 except HTTPError as e:
     print("ERROR: There was a problem accessing the maryland.gov data.")
     print(e)  # TODO: Implement logging
     print("Reading from backup...")
-    # Read csv from local backup
-    df = pd.read_csv(LOCAL_DATA_PATH.resolve(), dtype={"County": str})
+    df = pd.read_csv(LOCAL_DATA_PATH.resolve(), dtype={"County": str})  # Read csv from local backup
     print("SUCCESS: Read local copy from backup")
 
 else:
     # Replace the file locally as backup
     df.to_csv(
-        "./data/MD_COVID19_TotalVaccinationsCountyFirstandSecondSingleDose.csv",
+        (DATA_FOLDER / "MD_COVID19_TotalVaccinationsCountyFirstandSecondSingleDose.csv").resolve(),
         index=False,
     )
-    print("SUCCESS: Updated local backup")
+    print("SUCCESS: Updated local backup (overwrite)")
+
+# Drop daily columns
+df.drop(columns=["FirstDoseDaily", "SecondDoseDaily", "SingleDoseDaily"], inplace=True)
 
 # Strip trailing whitespace from end of County names
 df["County"] = df["County"].str.rstrip()
@@ -70,10 +75,6 @@ df.fillna(0, inplace=True)  # Fill missing entries with 0
 # Sort by date ad create numeric representation for each unique date for numeric Slider input
 df.sort_values(by="VACCINATION_DATE", inplace=True)
 numdate = [x for x in range(len(df["VACCINATION_DATE"].unique()))]
-
-# Build dataframe of all county population to get percentages
-# Link: https://www.census.gov/search-results.html?q=maryland+population+by+county&page=1&stateGeo=none&searchtype=web&cssp=SERP&_charset_=UTF-8
-pop_est_by_county = pd.read_csv(POP_EST_PATH.resolve(), dtype={"Population": int})
 
 # -----------------------------------------------------------------------------
 
@@ -136,19 +137,26 @@ app.layout = html.Div(
                                 dcc.Dropdown(
                                     id="select_dose",
                                     options=[
-                                        # TODO: ADD Fully vaccinated (second or single dose)
+                                        # {
+                                        #     "label": "Total at least one vaccine",
+                                        #     "value": TODO
+                                        # },
+                                        # {
+                                        #     "label": "Total fully vaccinated",
+                                        #     "value": TODO
+                                        # },
                                         {
-                                            "label": "Partially vaccinated (First Dose)",
+                                            "label": "Partially vaccinated (First Dose Only)",
                                             "value": "FirstDoseCumulative",
                                         },
                                         {
-                                            "label": "Second Dose Only",
+                                            "label": "Fully vaccinated (Second Dose Only)",
                                             "value": "SecondDoseCumulative",
                                         },
                                         {
-                                            "label": "Single Dose Only",
+                                            "label": "Fully vaccinated (Single Dose Only)",
                                             "value": "SingleDoseCumulative",
-                                        },
+                                        }
                                     ],
                                     searchable=False,
                                     clearable=False,
@@ -215,12 +223,9 @@ app.layout = html.Div(
 
 @app.callback(
     Output("choropleth", "figure"),
-    [
-        Input("select_date", "value"),
-        Input("select_dose", "value")
-    ],
+    [Input("select_date", "value"), Input("select_dose", "value"), Input("select-absolute-relative", "value")],
 )
-def display_choropleth(selected_date, selected_dose):  # Callback function
+def display_choropleth(selected_date, selected_dose, selected_button):  # Callback function
     """Diplay updated mapbox choropleth graph and date text when parameters are changed"""
 
     print(selected_date)
@@ -230,6 +235,17 @@ def display_choropleth(selected_date, selected_dose):  # Callback function
 
     dff1 = filter_by_date(df, slider_date)
 
+    
+    p = False
+    mx = max(df[selected_dose])
+    tick_format = ","
+    if selected_button == "Relative":
+        # Covert to percent
+        p = True
+        mx = 1  # Max for scale is 100
+        tick_format = "%"
+
+    dff1 = get_county_stats(dff1, percent=p)
     # Create Plotly mapbox figure
     fig = px.choropleth_mapbox(
         dff1,
@@ -241,8 +257,8 @@ def display_choropleth(selected_date, selected_dose):  # Callback function
         # Configure Colorbar
         color=selected_dose,
         color_continuous_scale="Viridis",
-        range_color=(0, max(df[selected_dose])),
-        opacity=0.7,
+        range_color=(0, mx),
+        opacity=0.7
     )
     # mapbox theme & layout
     fig.update_layout(mapbox_style="dark", mapbox_accesstoken=MAPBOX_TOKEN)
@@ -256,6 +272,7 @@ def display_choropleth(selected_date, selected_dose):  # Callback function
             "colorbar_len": 0.51,
             "colorbar_thickness": 20,
             "colorbar_tickfont_color": "#ffffff",
+            "colorbar_tickformat": tick_format
         }
     )
     # Update Colorbar labels
@@ -268,9 +285,9 @@ def display_choropleth(selected_date, selected_dose):  # Callback function
 @app.callback(
     [
         Output("output-date-location", "children"),
-        Output("stats-container1", "children"), 
-        Output("stats-container2", "children"), 
-        Output("stats-container3", "children")
+        Output("stats-container1", "children"),
+        Output("stats-container2", "children"),
+        Output("stats-container3", "children"),
     ],
     [
         Input("select_date", "value"),
@@ -297,7 +314,12 @@ def display_stats(selected_date, clickData, selected_button):
     atleast1_sum_s, fully_sum_s = get_state_stats(dff2, percent=p)
 
     if not clickData:
-        return output_date_location, ".", "Select a location on the map below", "to see more info"
+        return (
+            output_date_location,
+            ".",
+            "Select a location on the map below",
+            "to see more info",
+        )
 
     # Get selected county
     # Make sure to return 4 items in the callback!!!!
@@ -305,38 +327,55 @@ def display_stats(selected_date, clickData, selected_button):
 
     output_date_location += f"  |  County selected: **{county_name}**"
 
-    # Filter by county
-    dff2 = dff2.loc[
-        dff2.County == county_name,
-        ["FirstDoseCumulative", "SecondDoseCumulative", "SingleDoseCumulative"],
-    ]
-    print("1", dff2)
+    dff2 = get_county_stats(dff2, percent=p)
 
-    stats_dict = get_county_stats(dff2, county_name, percent=p)
-    print("2", stats_dict)
+    # Filter by county
+    stats_df = filter_by_county(dff2, county_name)
+
+    # Move averages into dict
+    try:
+        stats_dict = stats_df.to_dict("records")[0]  # Only returns one item after filter_by_county
+
+    except IndexError:
+        print("ERROR: Missing data for date, returning 0")
+        # TODO: Log output
+        stats_dict = {
+            "FirstDoseCumulative": 0,
+            "SecondDoseCumulative": 0,
+            "SingleDoseCumulative": 0,
+        }
 
     # The btn_state helper function provides a format specifier for percentages if the ouput is relative
     stats1 = [
-        f"First Dose: **{stats_dict['FirstDoseCumulative']:{btn_state(selected_button)}}{notate(selected_button)}**",
-        f"Second Dose: **{stats_dict['SecondDoseCumulative']:{btn_state(selected_button)}}{notate(selected_button)}**",
-        f"Single Dose: **{stats_dict['SingleDoseCumulative']:{btn_state(selected_button)}}{notate(selected_button)}**",
+        f"First Dose: **{stats_dict['FirstDoseCumulative']:{btn_state(selected_button)}}**",
+        f"Second Dose: **{stats_dict['SecondDoseCumulative']:{btn_state(selected_button)}}**",
+        f"Single Dose: **{stats_dict['SingleDoseCumulative']:{btn_state(selected_button)}}**",
     ]
-    
+
     # County sums
-    atleast1_sum_c = stats_dict["FirstDoseCumulative"] + stats_dict["SingleDoseCumulative"]
-    fully_sum_c = stats_dict["SecondDoseCumulative"] + stats_dict["SingleDoseCumulative"]
+    atleast1_sum_c = (
+        stats_dict["FirstDoseCumulative"] + stats_dict["SingleDoseCumulative"]
+    )
+    fully_sum_c = (
+        stats_dict["SecondDoseCumulative"] + stats_dict["SingleDoseCumulative"]
+    )
 
     stats2 = [
-        f"County partially vaccinated: **{atleast1_sum_c:{btn_state(selected_button)}}{notate(selected_button)}**",
-        f"County fully vaccinated: **{fully_sum_c:{btn_state(selected_button)}}{notate(selected_button)}**"
+        f"County partially vaccinated: **{atleast1_sum_c:{btn_state(selected_button)}}**",
+        f"County fully vaccinated: **{fully_sum_c:{btn_state(selected_button)}}**",
     ]
 
     stats3 = [
-        f"State Total partially vaccinated: **{atleast1_sum_s:{btn_state(selected_button)}}{notate(selected_button)}**",
-        f"State Total fully vaccinated: **{fully_sum_s:{btn_state(selected_button)}}{notate(selected_button)}**"
+        f"State Total partially vaccinated: **{atleast1_sum_s:{btn_state(selected_button)}}**",
+        f"State Total fully vaccinated: **{fully_sum_s:{btn_state(selected_button)}}**",
     ]
 
-    return output_date_location, "  |  ".join(stats1), "  |  ".join(stats2), "  |  ".join(stats3)
+    return (
+        output_date_location,
+        "  |  ".join(stats1),
+        "  |  ".join(stats2),
+        "  |  ".join(stats3)
+    )
 
 
 def get_slider_date(df, selected_date):
@@ -345,53 +384,71 @@ def get_slider_date(df, selected_date):
 
 
 def filter_by_date(df, slider_date):
-    """Make a shallow copy of the Pandas dataframe.
+    """
+    Make a deep copy of the Pandas dataframe.
     Filter the dataframe based on the date entered
-    Return filtered dataframe"""
+    Return filtered dataframe
+    """
     dff = df.copy(deep=True)
     return dff[dff["VACCINATION_DATE"] == slider_date]
 
 
-def get_county_stats(dff, county_name, percent=False):
-    
+def filter_by_county(df, county_name):
+    return df.loc[
+        df["County"] == county_name,
+        ["County", "FirstDoseCumulative", "SecondDoseCumulative", "SingleDoseCumulative"],
+    ]
+
+def get_county_stats(dff, percent=False):
+    """
+    Input date filtered dataframe, percent Bool (optional)
+    Return a DataFrame with 3 cols: 
+    "FirstDoseCumulative", "SecondDoseCumulative", & "SingleDoseCumulative"
+    Values (percent=False(default)):absolute people vacciated in county_name OR
+    Values (percent=True): relative people vaccinated in county_name
+    """
     # Get rid of index
     dff.reset_index(drop=True, inplace=True)
 
+    # TODO: Get aggregate of Total fully vaccinated
+
+    # TODO: Get aggregate of at least 1 vaccination
+
     if percent == True:
+        # Copy estimated pop by county
+        county_pops = pop_est_by_county.copy(deep=True)
+
+        col_list = [
+            "FirstDoseCumulative",
+            "SecondDoseCumulative",
+            "SingleDoseCumulative",
+        ]
+
         # Filter for selected location
-        county_total_pop = pop_est_by_county.loc[
-            pop_est_by_county["County"] == county_name, "Population"
-        ].values[0]
+        merged_df = pd.merge(county_pops, dff, how="left", on="County")
 
         # Get percent of total population vaccinated for each column
-        r = (dff / county_total_pop) * 100
-    else:
-        # Otherwise, just use absolute numbers
-        r = dff
+        merged_df[col_list] = merged_df[col_list].div(merged_df.Population, axis=0)
 
-    # Move averages into dict
-    try:
-        return r.to_dict("records")[0]
+        # Return the percent of the population vaccinated for 
+        return merged_df
 
-    except IndexError:
-        print("ERROR: Missing data for date, returning 0")
-        # TODO: Log output
-        return {
-        'FirstDoseCumulative': 0,
-        'SecondDoseCumulative': 0,
-        'SingleDoseCumulative': 0
-    }
+    # Otherwise, just use absolute numbers
+    return dff
 
 
 def get_state_stats(dff, percent=False):
-    '''Accepts DATE FILTERED dataframe, computes total'''
+    """Compute date-filtered dataframe totals"""
     # dataframe filterd to single day
+    dff.copy()  # Shallow copy
+
     atleast1_sum_state = dff["FirstDoseCumulative"].sum()
-    fully_sum_state = dff["SecondDoseCumulative"].sum() + dff["SingleDoseCumulative"].sum()
+    fully_sum_state = (
+        dff["SecondDoseCumulative"].sum() + dff["SingleDoseCumulative"].sum()
+    )
 
     if percent == True:
         state_pop = pop_est_by_county["Population"].sum()
-        print("THREE", state_pop)
         atleast1_sum_state /= state_pop
         fully_sum_state /= state_pop
 
@@ -399,11 +456,8 @@ def get_state_stats(dff, percent=False):
 
 
 def btn_state(selected_button):
-    return '.2f' if selected_button == 'Relative' else ','
-
-
-def notate(selected_button):
-    return '%' if selected_button == 'Relative' else ' people'
+    '''Returns string formatting based on arg'''
+    return ".2%" if selected_button == "Relative" else ","
 
 
 if __name__ == "__main__":
