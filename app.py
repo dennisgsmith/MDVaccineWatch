@@ -72,6 +72,11 @@ df = df[~(df["VACCINATION_DATE"] <= "2020-12-01")]  # Get rid of data before thi
 
 df.fillna(0, inplace=True)  # Fill missing entries with 0
 
+#Compute and store aggregates in df to save on load time
+# Get county total of at least 1 vaccination and full vaccinations
+df["AtLeastOneSum"] = df["FirstDoseCumulative"] + df["SingleDoseCumulative"]
+df["FullySum"] = df["SecondDoseCumulative"] + df["SingleDoseCumulative"]
+
 # Sort by date ad create numeric representation for each unique date for numeric Slider input
 df.sort_values(by="VACCINATION_DATE", inplace=True)
 numdate = [x for x in range(len(df["VACCINATION_DATE"].unique()))]
@@ -137,14 +142,14 @@ app.layout = html.Div(
                                 dcc.Dropdown(
                                     id="select_dose",
                                     options=[
-                                        # {
-                                        #     "label": "Total at least one vaccine",
-                                        #     "value": TODO
-                                        # },
-                                        # {
-                                        #     "label": "Total fully vaccinated",
-                                        #     "value": TODO
-                                        # },
+                                        {
+                                            "label": "Total at least one vaccine",
+                                            "value": "AtLeastOneSum"
+                                        },
+                                        {
+                                            "label": "Total fully vaccinated",
+                                            "value": "FullySum"
+                                        },
                                         {
                                             "label": "Partially vaccinated (First Dose Only)",
                                             "value": "FirstDoseCumulative",
@@ -160,7 +165,7 @@ app.layout = html.Div(
                                     ],
                                     searchable=False,
                                     clearable=False,
-                                    value="SecondDoseCumulative",
+                                    value="AtLeastOneSum",
                                     optionHeight=25,
                                 ),
                             ],
@@ -237,15 +242,17 @@ def display_choropleth(selected_date, selected_dose, selected_button):  # Callba
 
     
     p = False
-    mx = max(df[selected_dose])
     tick_format = ","
     if selected_button == "Relative":
         # Covert to percent
         p = True
-        mx = 1  # Max for scale is 100
         tick_format = "%"
 
     dff1 = get_county_stats(dff1, percent=p)
+
+    # Get max of aggregates returned by get_county_stats
+    mx = max(dff1[selected_dose])
+
     # Create Plotly mapbox figure
     fig = px.choropleth_mapbox(
         dff1,
@@ -343,7 +350,11 @@ def display_stats(selected_date, clickData, selected_button):
             "FirstDoseCumulative": 0,
             "SecondDoseCumulative": 0,
             "SingleDoseCumulative": 0,
+            "AtLeastOneSum": 0,
+            "FullySum": 0
         }
+
+    print(stats_dict)
 
     # The btn_state helper function provides a format specifier for percentages if the ouput is relative
     stats1 = [
@@ -352,17 +363,9 @@ def display_stats(selected_date, clickData, selected_button):
         f"Single Dose: **{stats_dict['SingleDoseCumulative']:{btn_state(selected_button)}}**",
     ]
 
-    # County sums
-    atleast1_sum_c = (
-        stats_dict["FirstDoseCumulative"] + stats_dict["SingleDoseCumulative"]
-    )
-    fully_sum_c = (
-        stats_dict["SecondDoseCumulative"] + stats_dict["SingleDoseCumulative"]
-    )
-
     stats2 = [
-        f"County partially vaccinated: **{atleast1_sum_c:{btn_state(selected_button)}}**",
-        f"County fully vaccinated: **{fully_sum_c:{btn_state(selected_button)}}**",
+        f"County partially vaccinated: **{stats_dict['AtLeastOneSum']:{btn_state(selected_button)}}**",
+        f"County fully vaccinated: **{stats_dict['FullySum']:{btn_state(selected_button)}}**",
     ]
 
     stats3 = [
@@ -396,7 +399,14 @@ def filter_by_date(df, slider_date):
 def filter_by_county(df, county_name):
     return df.loc[
         df["County"] == county_name,
-        ["County", "FirstDoseCumulative", "SecondDoseCumulative", "SingleDoseCumulative"],
+        [
+            "County",
+            "FirstDoseCumulative",
+            "SecondDoseCumulative",
+            "SingleDoseCumulative",
+            "AtLeastOneSum",
+            "FullySum"
+        ],
     ]
 
 def get_county_stats(dff, percent=False):
@@ -410,18 +420,17 @@ def get_county_stats(dff, percent=False):
     # Get rid of index
     dff.reset_index(drop=True, inplace=True)
 
-    # TODO: Get aggregate of Total fully vaccinated
-
-    # TODO: Get aggregate of at least 1 vaccination
-
     if percent == True:
         # Copy estimated pop by county
         county_pops = pop_est_by_county.copy(deep=True)
 
+        # Create list of columns to calculate percentage on
         col_list = [
             "FirstDoseCumulative",
             "SecondDoseCumulative",
             "SingleDoseCumulative",
+            "AtLeastOneSum",
+            "FullySum"
         ]
 
         # Filter for selected location
@@ -433,6 +442,7 @@ def get_county_stats(dff, percent=False):
         # Return the percent of the population vaccinated for 
         return merged_df
 
+    print(dff.columns)
     # Otherwise, just use absolute numbers
     return dff
 
@@ -456,7 +466,7 @@ def get_state_stats(dff, percent=False):
 
 
 def btn_state(selected_button):
-    '''Returns string formatting based on arg'''
+    """Returns string formatting based on arg"""
     return ".2%" if selected_button == "Relative" else ","
 
 
