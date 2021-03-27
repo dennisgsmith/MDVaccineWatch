@@ -4,11 +4,11 @@ import json
 from pathlib import Path
 
 import pandas as pd
-import numpy as np
 import dash
 import dash_core_components as dcc
 import dash_html_components as html
 from dash.dependencies import Input, Output
+import dash_table
 import plotly.express as px
 
 # -----------------------------------------------------------------------------
@@ -136,7 +136,7 @@ app.layout = html.Div(
                         html.Div(  # Dopdown menu
                             [
                                 html.P(
-                                    "Filter for type of dose:",
+                                    "Filter map for type of dose:",
                                     style={"color": "#ffffff"},
                                 ),
                                 dcc.Dropdown(
@@ -174,7 +174,7 @@ app.layout = html.Div(
                         html.Div(  # Radio buttons
                             [
                                 html.P(
-                                    "Choose between absolute (population) and relative (percent of population)"
+                                    "Choose between absolute (population) and relative (percent of population):"
                                 ),
                                 dcc.RadioItems(
                                     id="select-absolute-relative",
@@ -191,7 +191,7 @@ app.layout = html.Div(
                         html.Div(  # Date Slider
                             [
                                 html.P(
-                                    "Use the Timeline Slider to adjust the selected date."
+                                    "Adjust the timeline slider:"
                                 ),
                                 dcc.Slider(
                                     id="select_date",

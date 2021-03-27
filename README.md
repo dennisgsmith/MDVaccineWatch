@@ -17,18 +17,21 @@ After entries are sorted by date, `numdate` creates a unique index of each date 
 
 
 ## App Composition
-The `dash.html_components` allow for generation of HTML with Python. This allows for easy integration with `dcc.Graph` objects and other interfacing options.
+The `dash.html_components` allow for generation of HTML with Python. This allows for easy integration with `dcc.Graph` objects and other interface options.
 
+`select-dose` (`dcc.Dropdown`) filters the map display (not the text) by type of dose, acting as an input to the callback. This includes the aggregate values created in preprocessing the dataframe. It filters by the colomn selected in this dataframe.
 
-`dcc.RadioItems` filters the dataframe by type of dose, acting as an input to the callback. `dcc.Slider` plays a similar role but filters by date.
+`select-absolute-relative` (`dcc.Radioitems`) displays the information as either absoute numbers (directly from the Vaccine data df) or as relative percentages (Vaccine data divided by its county's estimated total population). This switch reflects both the text-based tabular stats and the choropleth map's representation of the data. It uses the `get_county_stats` function to compute its input (it's fed date-filtered data).
 
+`select-date` (`dcc.Slider`) also affects both the map and the text-based stats. It does this by using the `filter_by_date` function. Since it's values can only be numeric, the dates are each assigned a unique numer that is used as an index. The `min` and `max` are set to the minimum and maximum of this index, which accesses the dates in the `VACCINATION_DATE` column of the Vaccine dataframe.
 
 ## Callback
-The slider and radio buttons call `display_choropleth` when their values are changed, updating the map based on the data they filter from the dataframe. The funtion returns a container to display the current selected date and the `plotly.express` `choropleth_mapbox`.
+`display_choropleth` takes the values from the dcc components (`select_date`, `select_dose`, and `select-absolute-relative`). When their values are changed, the fucntion updates the choropleth map based on the data they filter from the vaccine dataframe. `maryland-counties` is directly ingested into the Plotly figure (`fig`) and paired with the data using the `featureidkey="properties.name"` argument. The `locations="Counties"` argument allows the function to assign the data to each of the respective counties in the GeoJSON. For the style, a Mapbox account and a `mapbox_accesstoken` was needed to use the "dark" setting. For more information visit the Plotly documentation: https://dash.plotly.com
 
+`display_stats` takes in two of the input proerties as the above funtion (`select_date` and `select-absolute-relative`). It also accept as input the `ClickData` generated when an object on the `choropleth_mapbox` is clicked. From this data, the name of the desired selected county can be accessed, allowing to lookup that county by name on the (date-filtered) dataframe using `filter_by_county`. When triggering the function, the boolean parameter `percent=False` allows users to use the state of `select-absolute-relative` to choose how the data should be represented in the stats. This is the same data being accessed when updating the mapbox figure. The helper function, `btn_state` allows the conditional formatting of absolute or relative data. If the button state passed in is "Realtive" the appropirate string-format symbol will be returned ("%") otherwise, the funtion will return string-formatting for absolute values.
 
 ## Credits
-The `geojson` mask of Maryland counties is provided courtesy of @frankrowe (https://github.com/frankrowe/maryland-geojson/blob/master/maryland-counties.geojson).
+The GeoJSON mask of Maryland counties is provided courtesy of @frankrowe (https://github.com/frankrowe/maryland-geojson/blob/master/maryland-counties.geojson).
 
 Vaccination data is provided by Maryland State Gov. (https://data.imap.maryland.gov/)
 
