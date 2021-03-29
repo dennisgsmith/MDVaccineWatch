@@ -36,6 +36,10 @@ body {
   color: #f1ba20;
 }
 
+#table-container {
+  color: black;
+}
+
 .dropdown-container {
   width: 500px;
   color: black;

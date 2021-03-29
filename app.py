@@ -8,7 +8,6 @@ import dash
 import dash_core_components as dcc
 import dash_html_components as html
 from dash.dependencies import Input, Output
-import dash_table
 import plotly.express as px
 
 # -----------------------------------------------------------------------------
@@ -74,8 +73,8 @@ df.fillna(0, inplace=True)  # Fill missing entries with 0
 
 #Compute and store aggregates in df to save on load time
 # Get county total of at least 1 vaccination and full vaccinations
-df["AtLeastOneSum"] = df["FirstDoseCumulative"] + df["SingleDoseCumulative"]
-df["FullySum"] = df["SecondDoseCumulative"] + df["SingleDoseCumulative"]
+df["AtLeastOneVaccine"] = df["FirstDoseCumulative"] + df["SingleDoseCumulative"]
+df["FullyVaccinated"] = df["SecondDoseCumulative"] + df["SingleDoseCumulative"]
 
 # Sort by date ad create numeric representation for each unique date for numeric Slider input
 df.sort_values(by="VACCINATION_DATE", inplace=True)
@@ -124,12 +123,13 @@ app.layout = html.Div(
                     target="_blank",
                     className="covidLINK",
                 ),
+                # State stats
+                dcc.Markdown(id="state-stats"),
                 # Display date selected
                 dcc.Markdown(id="output-date-location"),
                 # Ouput county stats triggered from choropleth clickData
-                dcc.Markdown(id="stats-container1"),
-                dcc.Markdown(id="stats-container2"),
-                dcc.Markdown(id="stats-container3"),
+                dcc.Markdown(id="county-stats"),
+                dcc.Markdown(id="dose-stats"),
                 # Create Choropleth Mapbox
                 html.Div(
                     [
@@ -144,11 +144,11 @@ app.layout = html.Div(
                                     options=[
                                         {
                                             "label": "Total at least one vaccine",
-                                            "value": "AtLeastOneSum"
+                                            "value": "AtLeastOneVaccine"
                                         },
                                         {
                                             "label": "Total fully vaccinated",
-                                            "value": "FullySum"
+                                            "value": "FullyVaccinated"
                                         },
                                         {
                                             "label": "Partially vaccinated (First Dose Only)",
@@ -165,7 +165,7 @@ app.layout = html.Div(
                                     ],
                                     searchable=False,
                                     clearable=False,
-                                    value="AtLeastOneSum",
+                                    value="AtLeastOneVaccine",
                                     optionHeight=25,
                                 ),
                             ],
@@ -276,7 +276,7 @@ def display_choropleth(selected_date, selected_dose, selected_button):  # Callba
         coloraxis={
             "colorbar_x": 0.05,
             "colorbar_y": 0.5,
-            "colorbar_len": 0.51,
+            "colorbar_len": 0.9,
             "colorbar_thickness": 20,
             "colorbar_tickfont_color": "#ffffff",
             "colorbar_tickformat": tick_format
@@ -291,10 +291,10 @@ def display_choropleth(selected_date, selected_dose, selected_button):  # Callba
 
 @app.callback(
     [
+        Output("state-stats", "children"),
         Output("output-date-location", "children"),
-        Output("stats-container1", "children"),
-        Output("stats-container2", "children"),
-        Output("stats-container3", "children"),
+        Output("county-stats", "children"),
+        Output("dose-stats", "children"),
     ],
     [
         Input("select_date", "value"),
@@ -324,8 +324,8 @@ def display_stats(selected_date, clickData, selected_button):
         return (
             output_date_location,
             ".",
-            "Select a location on the map below",
-            "to see more info",
+            "Select a location on the map below to see more info.",
+            ".",
         )
 
     # Get selected county
@@ -333,11 +333,17 @@ def display_stats(selected_date, clickData, selected_button):
     county_name = clickData.get("points")[0].get("location")
 
     output_date_location += f"  |  County selected: **{county_name}**"
+    pop_est = int(pop_est_by_county.loc[pop_est_by_county['County'] == county_name, 'Population'].values)
+    output_date_location += f"  |  County Estimated Population: **{pop_est:{','}}**"
+
+    pop_est_state = int(pop_est_by_county.Population.sum())
 
     dff2 = get_county_stats(dff2, percent=p)
 
     # Filter by county
     stats_df = filter_by_county(dff2, county_name)
+
+    stats_df.fillna(0)
 
     # Move averages into dict
     try:
@@ -350,34 +356,33 @@ def display_stats(selected_date, clickData, selected_button):
             "FirstDoseCumulative": 0,
             "SecondDoseCumulative": 0,
             "SingleDoseCumulative": 0,
-            "AtLeastOneSum": 0,
-            "FullySum": 0
+            "AtLeastOneVaccine": 0,
+            "FullyVaccinated": 0
         }
 
-    print(stats_dict)
-
     # The btn_state helper function provides a format specifier for percentages if the ouput is relative
-    stats1 = [
+    dose_stats = [
         f"First Dose: **{stats_dict['FirstDoseCumulative']:{btn_state(selected_button)}}**",
         f"Second Dose: **{stats_dict['SecondDoseCumulative']:{btn_state(selected_button)}}**",
         f"Single Dose: **{stats_dict['SingleDoseCumulative']:{btn_state(selected_button)}}**",
     ]
 
-    stats2 = [
-        f"County partially vaccinated: **{stats_dict['AtLeastOneSum']:{btn_state(selected_button)}}**",
-        f"County fully vaccinated: **{stats_dict['FullySum']:{btn_state(selected_button)}}**",
+    county_stats = [
+        f"County at least one vaccine: **{stats_dict['AtLeastOneVaccine']:{btn_state(selected_button)}}**",
+        f"County fully vaccinated: **{stats_dict['FullyVaccinated']:{btn_state(selected_button)}}**",
     ]
 
-    stats3 = [
-        f"State Total partially vaccinated: **{atleast1_sum_s:{btn_state(selected_button)}}**",
-        f"State Total fully vaccinated: **{fully_sum_s:{btn_state(selected_button)}}**",
+    state_stats = [
+        f"State at least one vaccine: **{atleast1_sum_s:{btn_state(selected_button)}}**",
+        f"State fully vaccinated: **{fully_sum_s:{btn_state(selected_button)}}**",
+        f"State Estimated Population: **{pop_est_state:{','}}**",
     ]
 
     return (
+        "  |  ".join(state_stats),
         output_date_location,
-        "  |  ".join(stats1),
-        "  |  ".join(stats2),
-        "  |  ".join(stats3)
+        "  |  ".join(county_stats),
+        "  |  ".join(dose_stats)
     )
 
 
@@ -404,8 +409,8 @@ def filter_by_county(df, county_name):
             "FirstDoseCumulative",
             "SecondDoseCumulative",
             "SingleDoseCumulative",
-            "AtLeastOneSum",
-            "FullySum"
+            "AtLeastOneVaccine",
+            "FullyVaccinated"
         ],
     ]
 
@@ -429,8 +434,8 @@ def get_county_stats(dff, percent=False):
             "FirstDoseCumulative",
             "SecondDoseCumulative",
             "SingleDoseCumulative",
-            "AtLeastOneSum",
-            "FullySum"
+            "AtLeastOneVaccine",
+            "FullyVaccinated"
         ]
 
         # Filter for selected location
