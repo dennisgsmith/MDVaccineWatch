@@ -9,6 +9,7 @@ import dash_core_components as dcc
 import dash_html_components as html
 from dash.dependencies import Input, Output
 import plotly.express as px
+import plotly.graph_objects as go
 
 # -----------------------------------------------------------------------------
 
@@ -79,6 +80,15 @@ df["FullyVaccinated"] = df["SecondDoseCumulative"] + df["SingleDoseCumulative"]
 # Sort by date ad create numeric representation for each unique date for numeric Slider input
 df.sort_values(by="VACCINATION_DATE", inplace=True)
 numdate = [x for x in range(len(df["VACCINATION_DATE"].unique()))]
+
+col_list = [            
+    "County",
+    "FirstDoseCumulative",
+    "SecondDoseCumulative",
+    "SingleDoseCumulative",
+    "AtLeastOneVaccine",
+    "FullyVaccinated"
+]
 
 # -----------------------------------------------------------------------------
 
@@ -345,20 +355,18 @@ def display_stats(selected_date, clickData, selected_button):
 
     stats_df.fillna(0)
 
+    stats_dict = {}
+
     # Move averages into dict
     try:
         stats_dict = stats_df.to_dict("records")[0]  # Only returns one item after filter_by_county
-
+        print(stats_dict)
     except IndexError:
         print("ERROR: Missing data for date, returning 0")
         # TODO: Log output
-        stats_dict = {
-            "FirstDoseCumulative": 0,
-            "SecondDoseCumulative": 0,
-            "SingleDoseCumulative": 0,
-            "AtLeastOneVaccine": 0,
-            "FullyVaccinated": 0
-        }
+        for col in col_list:
+            if col != "County":
+                stats_dict[col] = 0
 
     # The btn_state helper function provides a format specifier for percentages if the ouput is relative
     dose_stats = [
@@ -385,6 +393,7 @@ def display_stats(selected_date, clickData, selected_button):
         "  |  ".join(dose_stats)
     )
 
+    #TODO: Return stats_dict values to graph_object table instead of plaintext
 
 def get_slider_date(df, selected_date):
     """Return timestamp based on numerical index provided by slider"""
@@ -403,15 +412,7 @@ def filter_by_date(df, slider_date):
 
 def filter_by_county(df, county_name):
     return df.loc[
-        df["County"] == county_name,
-        [
-            "County",
-            "FirstDoseCumulative",
-            "SecondDoseCumulative",
-            "SingleDoseCumulative",
-            "AtLeastOneVaccine",
-            "FullyVaccinated"
-        ],
+        df["County"] == county_name, col_list
     ]
 
 def get_county_stats(dff, percent=False):
@@ -429,20 +430,17 @@ def get_county_stats(dff, percent=False):
         # Copy estimated pop by county
         county_pops = pop_est_by_county.copy(deep=True)
 
-        # Create list of columns to calculate percentage on
-        col_list = [
-            "FirstDoseCumulative",
-            "SecondDoseCumulative",
-            "SingleDoseCumulative",
-            "AtLeastOneVaccine",
-            "FullyVaccinated"
-        ]
-
         # Filter for selected location
         merged_df = pd.merge(county_pops, dff, how="left", on="County")
 
-        # Get percent of total population vaccinated for each column
-        merged_df[col_list] = merged_df[col_list].div(merged_df.Population, axis=0)
+        # Create list of columns to calculate percentage on
+        county_stats_col_list = [col for col in col_list if col != "County"]
+
+        # Get percent of total population vaccinated for numeric columns
+        merged_df[county_stats_col_list] = merged_df[county_stats_col_list].div(
+            merged_df.Population,
+            axis=0
+        )
 
         # Return the percent of the population vaccinated for 
         return merged_df
