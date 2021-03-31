@@ -5,11 +5,11 @@ from pathlib import Path
 
 import pandas as pd
 import dash
+import dash_table
 import dash_core_components as dcc
 import dash_html_components as html
 from dash.dependencies import Input, Output
 import plotly.express as px
-import plotly.graph_objects as go
 
 # -----------------------------------------------------------------------------
 
@@ -137,9 +137,16 @@ app.layout = html.Div(
                 dcc.Markdown(id="state-stats"),
                 # Display date selected
                 dcc.Markdown(id="output-date-location"),
-                # Ouput county stats triggered from choropleth clickData
-                dcc.Markdown(id="county-stats"),
-                dcc.Markdown(id="dose-stats"),
+
+                html.Div(
+                    dash_table.DataTable(
+                        id='output-table',
+                        columns=[],
+                        data=[]
+                    ),
+                    className="table-container"
+                ),
+
                 # Create Choropleth Mapbox
                 html.Div(
                     [
@@ -303,8 +310,8 @@ def display_choropleth(selected_date, selected_dose, selected_button):  # Callba
     [
         Output("state-stats", "children"),
         Output("output-date-location", "children"),
-        Output("county-stats", "children"),
-        Output("dose-stats", "children"),
+        Output("output-table", "columns"),
+        Output("output-table", "data")
     ],
     [
         Input("select_date", "value"),
@@ -330,13 +337,16 @@ def display_stats(selected_date, clickData, selected_button):
     # Get total state sums before filtering by County
     atleast1_sum_s, fully_sum_s = get_state_stats(dff2, percent=p)
 
+    pop_est_state = int(pop_est_by_county.Population.sum())
+
+    state_stats = [
+        f"State at least one vaccine: **{atleast1_sum_s:{btn_state(selected_button)}}**",
+        f"State fully vaccinated: **{fully_sum_s:{btn_state(selected_button)}}**",
+        f"State Estimated Population: **{pop_est_state:{','}}**",
+    ]
+
     if not clickData:
-        return (
-            output_date_location,
-            ".",
-            "Select a location on the map below to see more info.",
-            ".",
-        )
+        return state_stats, output_date_location, [{"id": "", "name": ""}], []
 
     # Get selected county
     # Make sure to return 4 items in the callback!!!!
@@ -346,54 +356,17 @@ def display_stats(selected_date, clickData, selected_button):
     pop_est = int(pop_est_by_county.loc[pop_est_by_county['County'] == county_name, 'Population'].values)
     output_date_location += f"  |  County Estimated Population: **{pop_est:{','}}**"
 
-    pop_est_state = int(pop_est_by_county.Population.sum())
-
     dff2 = get_county_stats(dff2, percent=p)
 
     # Filter by county
     stats_df = filter_by_county(dff2, county_name)
-
     stats_df.fillna(0)
 
-    stats_dict = {}
+    table_cols = [{"id": col, "name": col} for col in stats_df.columns]
+    table_data = stats_df.to_dict("records")
 
-    # Move averages into dict
-    try:
-        stats_dict = stats_df.to_dict("records")[0]  # Only returns one item after filter_by_county
-        print(stats_dict)
-    except IndexError:
-        print("ERROR: Missing data for date, returning 0")
-        # TODO: Log output
-        for col in col_list:
-            if col != "County":
-                stats_dict[col] = 0
+    return state_stats, output_date_location, table_cols, table_data
 
-    # The btn_state helper function provides a format specifier for percentages if the ouput is relative
-    dose_stats = [
-        f"First Dose: **{stats_dict['FirstDoseCumulative']:{btn_state(selected_button)}}**",
-        f"Second Dose: **{stats_dict['SecondDoseCumulative']:{btn_state(selected_button)}}**",
-        f"Single Dose: **{stats_dict['SingleDoseCumulative']:{btn_state(selected_button)}}**",
-    ]
-
-    county_stats = [
-        f"County at least one vaccine: **{stats_dict['AtLeastOneVaccine']:{btn_state(selected_button)}}**",
-        f"County fully vaccinated: **{stats_dict['FullyVaccinated']:{btn_state(selected_button)}}**",
-    ]
-
-    state_stats = [
-        f"State at least one vaccine: **{atleast1_sum_s:{btn_state(selected_button)}}**",
-        f"State fully vaccinated: **{fully_sum_s:{btn_state(selected_button)}}**",
-        f"State Estimated Population: **{pop_est_state:{','}}**",
-    ]
-
-    return (
-        "  |  ".join(state_stats),
-        output_date_location,
-        "  |  ".join(county_stats),
-        "  |  ".join(dose_stats)
-    )
-
-    #TODO: Return stats_dict values to graph_object table instead of plaintext
 
 def get_slider_date(df, selected_date):
     """Return timestamp based on numerical index provided by slider"""
