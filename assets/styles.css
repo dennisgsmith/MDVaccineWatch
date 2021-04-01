@@ -37,7 +37,8 @@ body {
 }
 
 .table-container {
-  color: black;
+  color: white;
+  background-color: black;
 }
 
 .dropdown-container {

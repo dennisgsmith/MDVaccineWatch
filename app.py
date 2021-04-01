@@ -5,7 +5,8 @@ from pathlib import Path
 
 import pandas as pd
 import dash
-import dash_table
+from dash_table import DataTable, FormatTemplate
+from dash_table.Format import Format, Group
 import dash_core_components as dcc
 import dash_html_components as html
 from dash.dependencies import Input, Output
@@ -74,20 +75,29 @@ df.fillna(0, inplace=True)  # Fill missing entries with 0
 
 #Compute and store aggregates in df to save on load time
 # Get county total of at least 1 vaccination and full vaccinations
-df["AtLeastOneVaccine"] = df["FirstDoseCumulative"] + df["SingleDoseCumulative"]
-df["FullyVaccinated"] = df["SecondDoseCumulative"] + df["SingleDoseCumulative"]
+df["At Least One Vaccine"] = df["FirstDoseCumulative"] + df["SingleDoseCumulative"]
+df["Fully Vaccinated"] = df["SecondDoseCumulative"] + df["SingleDoseCumulative"]
 
 # Sort by date ad create numeric representation for each unique date for numeric Slider input
 df.sort_values(by="VACCINATION_DATE", inplace=True)
 numdate = [x for x in range(len(df["VACCINATION_DATE"].unique()))]
 
-col_list = [            
+df.rename(
+    columns={
+        "FirstDoseCumulative": "First Dose",
+        "SecondDoseCumulative": "Second Dose",
+        "SingleDoseCumulative": "Single Dose"
+    },
+    inplace=True
+)
+
+col_list = [
     "County",
-    "FirstDoseCumulative",
-    "SecondDoseCumulative",
-    "SingleDoseCumulative",
-    "AtLeastOneVaccine",
-    "FullyVaccinated"
+    "First Dose",
+    "Second Dose",
+    "Single Dose",
+    "At Least One Vaccine",
+    "Fully Vaccinated"
 ]
 
 # -----------------------------------------------------------------------------
@@ -139,10 +149,17 @@ app.layout = html.Div(
                 dcc.Markdown(id="output-date-location"),
 
                 html.Div(
-                    dash_table.DataTable(
+                    DataTable(
                         id='output-table',
                         columns=[],
-                        data=[]
+                        data=[],
+                        column_selectable=False,
+                        style_cell={
+                            'backgroundColor': 'black',
+                            'color': '#ffffff',
+                            'textAlign': 'center',
+                            'fontFamily': "'Open sans', sans-serif"
+                        }
                     ),
                     className="table-container"
                 ),
@@ -161,28 +178,28 @@ app.layout = html.Div(
                                     options=[
                                         {
                                             "label": "Total at least one vaccine",
-                                            "value": "AtLeastOneVaccine"
+                                            "value": "At Least One Vaccine"
                                         },
                                         {
                                             "label": "Total fully vaccinated",
-                                            "value": "FullyVaccinated"
+                                            "value": "Fully Vaccinated"
                                         },
                                         {
                                             "label": "Partially vaccinated (First Dose Only)",
-                                            "value": "FirstDoseCumulative",
+                                            "value": "First Dose",
                                         },
                                         {
                                             "label": "Fully vaccinated (Second Dose Only)",
-                                            "value": "SecondDoseCumulative",
+                                            "value": "Second Dose",
                                         },
                                         {
                                             "label": "Fully vaccinated (Single Dose Only)",
-                                            "value": "SingleDoseCumulative",
+                                            "value": "Single Dose",
                                         }
                                     ],
                                     searchable=False,
                                     clearable=False,
-                                    value="AtLeastOneVaccine",
+                                    value="At Least One Vaccine",
                                     optionHeight=25,
                                 ),
                             ],
@@ -340,13 +357,14 @@ def display_stats(selected_date, clickData, selected_button):
     pop_est_state = int(pop_est_by_county.Population.sum())
 
     state_stats = [
-        f"State at least one vaccine: **{atleast1_sum_s:{btn_state(selected_button)}}**",
-        f"State fully vaccinated: **{fully_sum_s:{btn_state(selected_button)}}**",
+        f"State at least one vaccine: **{atleast1_sum_s:{'.2%' if p else ','}}**",
+        f"State fully vaccinated: **{fully_sum_s:{'.2%' if p else ','}}**",
         f"State Estimated Population: **{pop_est_state:{','}}**",
     ]
 
     if not clickData:
-        return state_stats, output_date_location, [{"id": "", "name": ""}], []
+        placeholder = "Select a county on the map to display county stats."
+        return state_stats, output_date_location, [{"id": "placeholder", "name": placeholder}], []
 
     # Get selected county
     # Make sure to return 4 items in the callback!!!!
@@ -361,8 +379,17 @@ def display_stats(selected_date, clickData, selected_button):
     # Filter by county
     stats_df = filter_by_county(dff2, county_name)
     stats_df.fillna(0)
+    stats_df.drop(columns='County', inplace=True)
 
-    table_cols = [{"id": col, "name": col} for col in stats_df.columns]
+    table_cols = [
+        {
+            "id": col,
+            "name": col,
+            "type": "numeric",
+            "format": format_table(p)
+        } 
+        for col in stats_df.columns
+    ]
     table_data = stats_df.to_dict("records")
 
     return state_stats, output_date_location, table_cols, table_data
@@ -392,7 +419,7 @@ def get_county_stats(dff, percent=False):
     """
     Input date filtered dataframe, percent Bool (optional)
     Return a DataFrame with 3 cols: 
-    "FirstDoseCumulative", "SecondDoseCumulative", & "SingleDoseCumulative"
+    "First Dose", "Second Dose", & "Single Dose"
     Values (percent=False(default)):absolute people vacciated in county_name OR
     Values (percent=True): relative people vaccinated in county_name
     """
@@ -428,9 +455,9 @@ def get_state_stats(dff, percent=False):
     # dataframe filterd to single day
     dff.copy()  # Shallow copy
 
-    atleast1_sum_state = dff["FirstDoseCumulative"].sum()
+    atleast1_sum_state = dff["First Dose"].sum()
     fully_sum_state = (
-        dff["SecondDoseCumulative"].sum() + dff["SingleDoseCumulative"].sum()
+        dff["Second Dose"].sum() + dff["Single Dose"].sum()
     )
 
     if percent == True:
@@ -441,9 +468,12 @@ def get_state_stats(dff, percent=False):
     return atleast1_sum_state, fully_sum_state
 
 
-def btn_state(selected_button):
-    """Returns string formatting based on arg"""
-    return ".2%" if selected_button == "Relative" else ","
+def format_table(percent=False):
+    """Returns dash_table formatting string based on boolean arg"""
+    if not percent:
+        return Format().group(True)
+    else:
+        return FormatTemplate.percentage(2)
 
 
 if __name__ == "__main__":
