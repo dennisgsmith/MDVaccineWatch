@@ -42,20 +42,27 @@ pop_est_by_county = pd.read_csv(POP_EST_PATH.resolve(), dtype={"Population": int
 
 # Attempt to get updated csv from URL, default to most recent local copy if request fails
 try:
-    df = pd.read_csv(DATA_URL, dtype={"County": str})  # Pandas reads directly from URL input
+    df = pd.read_csv(
+        DATA_URL, dtype={"County": str}
+    )  # Pandas reads directly from URL input
     print("SUCCESS: DATA URL Working")
 
 except HTTPError as e:
     print("ERROR: There was a problem accessing the maryland.gov data.")
     print(e)  # TODO: Implement logging
     print("Reading from backup...")
-    df = pd.read_csv(LOCAL_DATA_PATH.resolve(), dtype={"County": str})  # Read csv from local backup
+    df = pd.read_csv(
+        LOCAL_DATA_PATH.resolve(), dtype={"County": str}
+    )  # Read csv from local backup
     print("SUCCESS: Read local copy from backup")
 
 else:
     # Replace the file locally as backup
     df.to_csv(
-        (DATA_FOLDER / "MD_COVID19_TotalVaccinationsCountyFirstandSecondSingleDose.csv").resolve(),
+        (
+            DATA_FOLDER
+            / "MD_COVID19_TotalVaccinationsCountyFirstandSecondSingleDose.csv"
+        ).resolve(),
         index=False,
     )
     print("SUCCESS: Updated local backup (overwrite)")
@@ -73,7 +80,7 @@ df = df[~(df["VACCINATION_DATE"] <= "2020-12-01")]  # Get rid of data before thi
 
 df.fillna(0, inplace=True)  # Fill missing entries with 0
 
-#Compute and store aggregates in df to save on load time
+# Compute and store aggregates in df to save on load time
 # Get county total of at least 1 vaccination and full vaccinations
 df["At Least One Vaccine"] = df["FirstDoseCumulative"] + df["SingleDoseCumulative"]
 df["Fully Vaccinated"] = df["SecondDoseCumulative"] + df["SingleDoseCumulative"]
@@ -86,9 +93,9 @@ df.rename(
     columns={
         "FirstDoseCumulative": "First Dose",
         "SecondDoseCumulative": "Second Dose",
-        "SingleDoseCumulative": "Single Dose"
+        "SingleDoseCumulative": "Single Dose",
     },
-    inplace=True
+    inplace=True,
 )
 
 col_list = [
@@ -97,7 +104,7 @@ col_list = [
     "Second Dose",
     "Single Dose",
     "At Least One Vaccine",
-    "Fully Vaccinated"
+    "Fully Vaccinated",
 ]
 
 # -----------------------------------------------------------------------------
@@ -147,23 +154,22 @@ app.layout = html.Div(
                 dcc.Markdown(id="state-stats"),
                 # Display date selected
                 dcc.Markdown(id="output-date-location"),
-
                 html.Div(
                     DataTable(
-                        id='output-table',
+                        id="output-table",
                         columns=[],
                         data=[],
                         column_selectable=False,
                         style_cell={
-                            'backgroundColor': 'black',
-                            'color': '#ffffff',
-                            'textAlign': 'center',
-                            'fontFamily': "'Open sans', sans-serif"
-                        }
+                            "backgroundColor": "black",
+                            "color": "#ffffff",
+                            "textAlign": "center",
+                            "fontFamily": "'Open sans', sans-serif",
+                        },
+                        style_header={"color": "#f1ba20", "font-weight": "bold"},
                     ),
-                    className="table-container"
+                    className="table-container",
                 ),
-
                 # Create Choropleth Mapbox
                 html.Div(
                     [
@@ -178,11 +184,11 @@ app.layout = html.Div(
                                     options=[
                                         {
                                             "label": "Total at least one vaccine",
-                                            "value": "At Least One Vaccine"
+                                            "value": "At Least One Vaccine",
                                         },
                                         {
                                             "label": "Total fully vaccinated",
-                                            "value": "Fully Vaccinated"
+                                            "value": "Fully Vaccinated",
                                         },
                                         {
                                             "label": "Partially vaccinated (First Dose Only)",
@@ -195,7 +201,7 @@ app.layout = html.Div(
                                         {
                                             "label": "Fully vaccinated (Single Dose Only)",
                                             "value": "Single Dose",
-                                        }
+                                        },
                                     ],
                                     searchable=False,
                                     clearable=False,
@@ -224,9 +230,7 @@ app.layout = html.Div(
                         ),
                         html.Div(  # Date Slider
                             [
-                                html.P(
-                                    "Adjust the timeline slider:"
-                                ),
+                                html.P("Adjust the timeline slider:"),
                                 dcc.Slider(
                                     id="select_date",
                                     min=numdate[0],
@@ -262,19 +266,25 @@ app.layout = html.Div(
 
 @app.callback(
     Output("choropleth", "figure"),
-    [Input("select_date", "value"), Input("select_dose", "value"), Input("select-absolute-relative", "value")],
+    [
+        Input("select_date", "value"),
+        Input("select_dose", "value"),
+        Input("select-absolute-relative", "value"),
+    ],
 )
-def display_choropleth(selected_date, selected_dose, selected_button):  # Callback function
+def display_choropleth(
+    selected_date, selected_dose, selected_button
+):  # Callback function
     """Diplay updated mapbox choropleth graph and date text when parameters are changed"""
 
-    print(selected_date)
-    print(type(selected_date))
+    print(selected_date, type(selected_date))
+    print(selected_dose, type(selected_dose))
+    print(selected_button, type(selected_button))
 
     slider_date = get_slider_date(df, selected_date)
 
     dff1 = filter_by_date(df, slider_date)
 
-    
     p = False
     tick_format = ","
     if selected_button == "Relative":
@@ -299,7 +309,7 @@ def display_choropleth(selected_date, selected_dose, selected_button):  # Callba
         color=selected_dose,
         color_continuous_scale="Viridis",
         range_color=(0, mx),
-        opacity=0.7
+        opacity=0.7,
     )
     # mapbox theme & layout
     fig.update_layout(mapbox_style="dark", mapbox_accesstoken=MAPBOX_TOKEN)
@@ -313,7 +323,7 @@ def display_choropleth(selected_date, selected_dose, selected_button):  # Callba
             "colorbar_len": 0.9,
             "colorbar_thickness": 20,
             "colorbar_tickfont_color": "#ffffff",
-            "colorbar_tickformat": tick_format
+            "colorbar_tickformat": tick_format,
         }
     )
     # Update Colorbar labels
@@ -328,7 +338,7 @@ def display_choropleth(selected_date, selected_dose, selected_button):  # Callba
         Output("state-stats", "children"),
         Output("output-date-location", "children"),
         Output("output-table", "columns"),
-        Output("output-table", "data")
+        Output("output-table", "data"),
     ],
     [
         Input("select_date", "value"),
@@ -363,15 +373,28 @@ def display_stats(selected_date, clickData, selected_button):
     ]
 
     if not clickData:
-        placeholder = "Select a county on the map to display county stats."
-        return state_stats, output_date_location, [{"id": "placeholder", "name": placeholder}], []
+        placeholder = "Select a county on the map for more details"
+        return (
+            state_stats,
+            output_date_location,
+            [{"id": "placeholder", "name": placeholder}],
+            [
+                {
+                    "placeholder": "⬇️ Customize and filter the information with the tools below ⬇️"
+                }
+            ],
+        )
 
     # Get selected county
     # Make sure to return 4 items in the callback!!!!
     county_name = clickData.get("points")[0].get("location")
 
     output_date_location += f"  |  County selected: **{county_name}**"
-    pop_est = int(pop_est_by_county.loc[pop_est_by_county['County'] == county_name, 'Population'].values)
+    pop_est = int(
+        pop_est_by_county.loc[
+            pop_est_by_county["County"] == county_name, "Population"
+        ].values
+    )
     output_date_location += f"  |  County Estimated Population: **{pop_est:{','}}**"
 
     dff2 = get_county_stats(dff2, percent=p)
@@ -379,20 +402,19 @@ def display_stats(selected_date, clickData, selected_button):
     # Filter by county
     stats_df = filter_by_county(dff2, county_name)
     stats_df.fillna(0)
-    stats_df.drop(columns='County', inplace=True)
+    stats_df.drop(columns="County", inplace=True)
 
     table_cols = [
-        {
-            "id": col,
-            "name": col,
-            "type": "numeric",
-            "format": format_table(p)
-        } 
+        {"id": col, "name": col, "type": "numeric", "format": format_table(p)}
         for col in stats_df.columns
     ]
     table_data = stats_df.to_dict("records")
 
     return state_stats, output_date_location, table_cols, table_data
+
+
+# -----------------------------------------------------------------------------
+# Helper Functions
 
 
 def get_slider_date(df, selected_date):
@@ -402,7 +424,6 @@ def get_slider_date(df, selected_date):
 
 def filter_by_date(df, slider_date):
     """
-    Make a deep copy of the Pandas dataframe.
     Filter the dataframe based on the date entered
     Return filtered dataframe
     """
@@ -411,14 +432,14 @@ def filter_by_date(df, slider_date):
 
 
 def filter_by_county(df, county_name):
-    return df.loc[
-        df["County"] == county_name, col_list
-    ]
+    """Use Pandas boolean indexing to return a county-filtered dataframe"""
+    return df.loc[df["County"] == county_name, col_list]
+
 
 def get_county_stats(dff, percent=False):
     """
     Input date filtered dataframe, percent Bool (optional)
-    Return a DataFrame with 3 cols: 
+    Return a DataFrame with 3 cols:
     "First Dose", "Second Dose", & "Single Dose"
     Values (percent=False(default)):absolute people vacciated in county_name OR
     Values (percent=True): relative people vaccinated in county_name
@@ -438,11 +459,10 @@ def get_county_stats(dff, percent=False):
 
         # Get percent of total population vaccinated for numeric columns
         merged_df[county_stats_col_list] = merged_df[county_stats_col_list].div(
-            merged_df.Population,
-            axis=0
+            merged_df.Population, axis=0
         )
 
-        # Return the percent of the population vaccinated for 
+        # Return the percent of the population vaccinated for
         return merged_df
 
     print(dff.columns)
@@ -456,9 +476,7 @@ def get_state_stats(dff, percent=False):
     dff.copy()  # Shallow copy
 
     atleast1_sum_state = dff["First Dose"].sum()
-    fully_sum_state = (
-        dff["Second Dose"].sum() + dff["Single Dose"].sum()
-    )
+    fully_sum_state = dff["Second Dose"].sum() + dff["Single Dose"].sum()
 
     if percent == True:
         state_pop = pop_est_by_county["Population"].sum()
@@ -469,7 +487,7 @@ def get_state_stats(dff, percent=False):
 
 
 def format_table(percent=False):
-    """Returns dash_table formatting string based on boolean arg"""
+    """Return dash_table formatting string based on boolean arg"""
     if not percent:
         return Format().group(True)
     else:
