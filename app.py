@@ -98,6 +98,7 @@ df.rename(
     inplace=True,
 )
 
+# Define the columns to subset globally to make it easier to reference them
 col_list = [
     "County",
     "First Dose",
