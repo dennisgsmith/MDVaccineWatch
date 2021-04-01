@@ -1,12 +1,11 @@
 from urllib.error import HTTPError
-from urllib.request import urlopen
 import json
 from pathlib import Path
 
 import pandas as pd
 import dash
 from dash_table import DataTable, FormatTemplate
-from dash_table.Format import Format, Group
+from dash_table.Format import Format
 import dash_core_components as dcc
 import dash_html_components as html
 from dash.dependencies import Input, Output
