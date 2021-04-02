@@ -13,10 +13,17 @@ import plotly.express as px
 
 # -----------------------------------------------------------------------------
 
-MAPBOX_TOKEN = open(".mapbox_token").read()
-
 HERE = Path(__file__).parent
 DATA_FOLDER = HERE / "data"
+
+# Optional mapbox token for styling
+try:
+    STYLE = "dark"
+    MAPBOX_TOKEN = open(".mapbox_token").read()
+except FileNotFoundError:
+    print("Using background that does not require token")
+    STYLE = "carto-darkmatter"
+    MAPBOX_TOKEN = None
 
 # Get Maryland counties layer as geojson
 # source: frankrowe GH (see README)
@@ -160,11 +167,14 @@ app.layout = html.Div(
                         columns=[],
                         data=[],
                         column_selectable=False,
+                        style_table={'overflowX': 'auto'},
                         style_cell={
                             "backgroundColor": "black",
                             "color": "#ffffff",
                             "textAlign": "center",
                             "fontFamily": "'Open sans', sans-serif",
+                            'whiteSpace': 'normal',
+                            'height': 'auto'
                         },
                         style_header={"color": "#f1ba20", "font-weight": "bold"},
                     ),
@@ -253,6 +263,27 @@ app.layout = html.Div(
                     className="flex-container",
                 ),
                 dcc.Graph(id="choropleth", className="coropleth-container"),
+                html.Div(
+                    [
+                        html.A("Sources:"),
+                        html.A(
+                            "GoeJSON", 
+                            href='https://github.com/frankrowe/maryland-geojson/',
+                            target="_blank"
+                        ),
+                        html.A(
+                            "Maryland Vaccine Data", 
+                            href='https://data.imap.maryland.gov/',
+                            target="_blank"
+                        ),
+                        html.A(
+                            "Maryland Census Data", 
+                            href='https://www.census.gov/',
+                            target="_blank"
+                        ),
+                    ],
+                    className="sources"
+                ),
             ],
             className="wrapper",
         ),
@@ -312,7 +343,7 @@ def display_choropleth(
         opacity=0.7,
     )
     # mapbox theme & layout
-    fig.update_layout(mapbox_style="dark", mapbox_accesstoken=MAPBOX_TOKEN)
+    fig.update_layout(mapbox_style=STYLE, mapbox_accesstoken=MAPBOX_TOKEN)
     fig.update_layout(margin={"r": 0, "t": 0, "l": 0, "b": 0})
 
     # Update Colorbar style
@@ -366,11 +397,11 @@ def display_stats(selected_date, clickData, selected_button):
 
     pop_est_state = int(pop_est_by_county.Population.sum())
 
-    state_stats = [
-        f"State at least one vaccine: **{atleast1_sum_s:{'.2%' if p else ','}}**",
-        f"State fully vaccinated: **{fully_sum_s:{'.2%' if p else ','}}**",
+    state_stats = '  |  '.join([
+        f"State At Least One Vaccine: **{atleast1_sum_s:{'.2%' if p else ','}}**",
+        f"State Fully Vaccinated: **{fully_sum_s:{'.2%' if p else ','}}**",
         f"State Estimated Population: **{pop_est_state:{','}}**",
-    ]
+    ])
 
     if not clickData:
         placeholder = "Select a county on the map for more details"
@@ -389,7 +420,7 @@ def display_stats(selected_date, clickData, selected_button):
     # Make sure to return 4 items in the callback!!!!
     county_name = clickData.get("points")[0].get("location")
 
-    output_date_location += f"  |  County selected: **{county_name}**"
+    output_date_location += f"  |  County Selected: **{county_name}**"
     pop_est = int(
         pop_est_by_county.loc[
             pop_est_by_county["County"] == county_name, "Population"

@@ -30,6 +30,21 @@ The `dash.html_components` allow for generation of HTML with Python. This allows
 
 `display_stats` takes in two of the input proerties as the above funtion (`select_date` and `select-absolute-relative`). It also accept as input the `ClickData` generated when an object on the `choropleth_mapbox` is clicked. From this data, the name of the desired selected county can be accessed, allowing to lookup that county by name on the (date-filtered) dataframe using `filter_by_county`. When triggering the function, the boolean parameter `percent=False` allows users to use the state of `select-absolute-relative` to choose how the data should be represented in the stats. This is the same data being accessed when updating the mapbox figure. In a `dash_table` `DataTable`, cells are formatted based on their respective columns `format` parameter. This parameter accepts different `dash_table` objects from modules such as `dash_table.FormatTemplate` and `dash_table.Format` The helper function `format_table` allows the conditional formatting of absolute or relative data. It accepts a boolean argument that should indicate the format of the table column it is called upon, returning the respective `dash_table` object.
 
+## Installation
+To run this project locally, you will need to do a few things:
+
+1. Make sure you are using Python 3.8
+2. `git clone` the repo into the desired directory && cd into the repo
+3. (Recommended) Set up and activate a [virtual environment](https://docs.python.org/3/library/venv.html)
+4. Run `pip install --upgrade pip` and `pip install -r requirements.txt`
+5. (Optional) Cusomize the theme, [sign up for a free mapbox account](https://www.mapbox.com)
+  - If you would like to use the "dark" theme, or one of the other mapbox themes that require a free token
+  - After you sign up for an account and copy your account token to your clipboard:
+    - run `echo 'PASTE_YOUR_MAPBOX_KEY_HERE' > .mapbox_token` in the project directory
+  - Otherwise, the theme will default to "carto-darkmatter". Visit the [plotly docs](https://plotly.github.io/plotly.py-docs/generated/plotly.express.choropleth_mapbox.html) for more information.
+6. Now you can run `python app.py` and use the localhost port given to preview the site!
+7. If you have any feedback or run into issues, please feel free to contact me 🙂 📩  dennisgsmith12@gmail.com
+
 ## Credits
 The GeoJSON mask of Maryland counties is provided courtesy of @frankrowe (https://github.com/frankrowe/maryland-geojson/blob/master/maryland-counties.geojson).
 

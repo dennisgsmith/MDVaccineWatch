@@ -32,6 +32,13 @@ body {
   color: #8b0000;
 }
 
+.header-description {
+  color: #AAAAAA;
+  margin: 4px auto;
+  text-align: center;
+  max-width: 384px;
+}
+
 .covidLINK {
   color: #f1ba20;
 }
@@ -46,28 +53,30 @@ body {
   color: black;
 }
 
+.radio-button-container {
+  width: 500px;
+}
+
 .slider-container {
   width: 500px;
 }
 
-.radio-button-container {
-  width: 500px;
+.coropleth-container {
+  padding: 10px 5px 10px 5px;
+}
+
+a+a {
+  margin-left: 10px;
+}
+
+.sources > a {
+  color: #f1ba20;
+  font-size: x-small;
 }
 
 .flex-container {
   display: flex;
   font-size: smaller;
-}
-
-.header-description {
-  color: #AAAAAA;
-  margin: 4px auto;
-  text-align: center;
-  max-width: 384px;
-}
-
-.coropleth-container {
-  padding: 10px 5px 10px 5px;
 }
 
 .wrapper {
