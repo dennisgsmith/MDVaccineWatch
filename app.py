@@ -167,16 +167,24 @@ app.layout = html.Div(
                         columns=[],
                         data=[],
                         column_selectable=False,
-                        style_table={'overflowX': 'auto'},
+                        style_table={"overflowX": "auto"},
                         style_cell={
                             "backgroundColor": "black",
                             "color": "#ffffff",
                             "textAlign": "center",
                             "fontFamily": "'Open sans', sans-serif",
-                            'whiteSpace': 'normal',
-                            'height': 'auto'
+                            "whiteSpace": "normal",
+                            "height": "auto",
                         },
                         style_header={"color": "#f1ba20", "font-weight": "bold"},
+                        style_data_conditional=[
+                            {  # override hot pink selected color
+                                "if": {"state": "active"},
+                                "backgroundColor": "black",
+                                "border": "3px solid white",
+                                "color": "white",
+                            }
+                        ],
                     ),
                     className="table-container",
                 ),
@@ -267,22 +275,22 @@ app.layout = html.Div(
                     [
                         html.A("Sources:"),
                         html.A(
-                            "GoeJSON", 
-                            href='https://github.com/frankrowe/maryland-geojson/',
-                            target="_blank"
+                            "GoeJSON",
+                            href="https://github.com/frankrowe/maryland-geojson/",
+                            target="_blank",
                         ),
                         html.A(
-                            "Maryland Vaccine Data", 
-                            href='https://data.imap.maryland.gov/',
-                            target="_blank"
+                            "Maryland Vaccine Data",
+                            href="https://data.imap.maryland.gov/",
+                            target="_blank",
                         ),
                         html.A(
-                            "Maryland Census Data", 
-                            href='https://www.census.gov/',
-                            target="_blank"
+                            "Maryland Census Data",
+                            href="https://www.census.gov/",
+                            target="_blank",
                         ),
                     ],
-                    className="sources"
+                    className="sources",
                 ),
             ],
             className="wrapper",
@@ -397,11 +405,13 @@ def display_stats(selected_date, clickData, selected_button):
 
     pop_est_state = int(pop_est_by_county.Population.sum())
 
-    state_stats = '  |  '.join([
-        f"State At Least One Vaccine: **{atleast1_sum_s:{'.2%' if p else ','}}**",
-        f"State Fully Vaccinated: **{fully_sum_s:{'.2%' if p else ','}}**",
-        f"State Estimated Population: **{pop_est_state:{','}}**",
-    ])
+    state_stats = "  |  ".join(
+        [
+            f"State At Least One Vaccine: **{atleast1_sum_s:{'.2%' if p else ','}}**",
+            f"State Fully Vaccinated: **{fully_sum_s:{'.2%' if p else ','}}**",
+            f"State Estimated Population: **{pop_est_state:{','}}**",
+        ]
+    )
 
     if not clickData:
         placeholder = "Select a county on the map for more details"
