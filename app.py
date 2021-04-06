@@ -188,7 +188,6 @@ app.layout = html.Div(
                     ),
                     className="table-container",
                 ),
-                # Create Choropleth Mapbox
                 html.Div(
                     [
                         html.Div(  # Dopdown menu
@@ -269,7 +268,7 @@ app.layout = html.Div(
                         ),
                     ],
                     className="flex-container",
-                ),
+                ),  # Create Choropleth Mapbox
                 dcc.Graph(id="choropleth", className="coropleth-container"),
                 html.Div(
                     [
