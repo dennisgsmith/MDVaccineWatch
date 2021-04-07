@@ -40,7 +40,8 @@ To run this project locally, you will need to do a few things:
 5. (Optional) Cusomize the theme, [sign up for a free mapbox account](https://www.mapbox.com)
   - If you would like to use the "dark" theme, or one of the other mapbox themes that require a free token
   - After you sign up for an account and copy your account token to your clipboard:
-    - run `echo 'PASTE_YOUR_MAPBOX_KEY_HERE' > .mapbox_token` in the project directory
+    - cd into the `app` directory
+    - run `echo 'PASTE_YOUR_MAPBOX_KEY_HERE' > .mapbox_token` in the `app` directory
   - Otherwise, the theme will default to "carto-darkmatter". Visit the [plotly docs](https://plotly.github.io/plotly.py-docs/generated/plotly.express.choropleth_mapbox.html) for more information.
 6. Now you can run `python app.py` and use the localhost port given to preview the site!
 7. If you have any feedback or run into issues, please feel free to contact me 🙂 📩  dennisgsmith12@gmail.com

@@ -1,4 +1,3 @@
-from urllib.error import HTTPError
 import json
 from pathlib import Path
 
@@ -13,8 +12,11 @@ import plotly.express as px
 
 # -----------------------------------------------------------------------------
 
-HERE = Path(__file__).parent
-DATA_FOLDER = HERE / "data"
+
+PARENT_DIR = Path(__file__).resolve().parents[1]  # Go two directories up from file location
+FILES_DIR = PARENT_DIR / "backend" / "files"  # Navigate to folder that stores data
+LOCAL_FILE_PATH = FILES_DIR / "scheduled" / "MD_Vax_Data.csv"  # Path to vaccine data
+
 
 # Optional mapbox token for styling
 try:
@@ -25,84 +27,17 @@ except FileNotFoundError:
     STYLE = "carto-darkmatter"
     MAPBOX_TOKEN = None
 
-# Get Maryland counties layer as geojson
-# source: frankrowe GH (see README)
-GEOJSON_PATH = DATA_FOLDER / "maryland-counties.geojson"
 
-# Total population by county
-POP_EST_PATH = DATA_FOLDER / "Population_Estimates_by_County.csv"
-
-# COVID-19 Data
-LOCAL_DATA_PATH = list(DATA_FOLDER.glob("MD_COVID19_*"))[0]
-
-# Get updated COVID-19 data from https://data.imap.maryland.gov/
-DATA_URL = "https://opendata.arcgis.com/datasets/89c9c1236ca848188d93beb5928f4162_0.csv"
-
-# Load GeoJSON from local data file
-with open(GEOJSON_PATH.resolve()) as f:
-    counties = json.load(f)
-
-# Build dataframe of all county population to get percentages
-# Source: https://www.census.gov/
-pop_est_by_county = pd.read_csv(POP_EST_PATH.resolve(), dtype={"Population": int})
-
-# Attempt to get updated csv from URL, default to most recent local copy if request fails
-try:
-    df = pd.read_csv(
-        DATA_URL, dtype={"County": str}
-    )  # Pandas reads directly from URL input
-    print("SUCCESS: DATA URL Working")
-
-except HTTPError as e:
-    print("ERROR: There was a problem accessing the maryland.gov data.")
-    print(e)  # TODO: Implement logging
-    print("Reading from backup...")
-    df = pd.read_csv(
-        LOCAL_DATA_PATH.resolve(), dtype={"County": str}
-    )  # Read csv from local backup
-    print("SUCCESS: Read local copy from backup")
-
-else:
-    # Replace the file locally as backup
-    df.to_csv(
-        (
-            DATA_FOLDER
-            / "MD_COVID19_TotalVaccinationsCountyFirstandSecondSingleDose.csv"
-        ).resolve(),
-        index=False,
-    )
-    print("SUCCESS: Updated local backup (overwrite)")
-
-# Drop daily columns
-df.drop(columns=["FirstDoseDaily", "SecondDoseDaily", "SingleDoseDaily"], inplace=True)
-
-# Strip trailing whitespace from end of County names
-df["County"] = df["County"].str.rstrip()
+# Load MD Vaccine Data
+df = pd.read_csv(LOCAL_FILE_PATH.resolve())
 
 # Convert to datetime
 df["VACCINATION_DATE"] = pd.to_datetime(df["VACCINATION_DATE"], format="%Y-%m-%d")
 
-df = df[~(df["VACCINATION_DATE"] <= "2020-12-01")]  # Get rid of data before this date
-
-df.fillna(0, inplace=True)  # Fill missing entries with 0
-
-# Compute and store aggregates in df to save on load time
-# Get county total of at least 1 vaccination and full vaccinations
-df["At Least One Vaccine"] = df["FirstDoseCumulative"] + df["SingleDoseCumulative"]
-df["Fully Vaccinated"] = df["SecondDoseCumulative"] + df["SingleDoseCumulative"]
-
 # Sort by date ad create numeric representation for each unique date for numeric Slider input
 df.sort_values(by="VACCINATION_DATE", inplace=True)
-numdate = [x for x in range(len(df["VACCINATION_DATE"].unique()))]
 
-df.rename(
-    columns={
-        "FirstDoseCumulative": "First Dose",
-        "SecondDoseCumulative": "Second Dose",
-        "SingleDoseCumulative": "Single Dose",
-    },
-    inplace=True,
-)
+numdate = [x for x in range(len(df["VACCINATION_DATE"].unique()))]
 
 # Define the columns to subset globally to make it easier to reference them
 col_list = [
@@ -113,6 +48,24 @@ col_list = [
     "At Least One Vaccine",
     "Fully Vaccinated",
 ]
+
+
+# Get Maryland counties layer as geojson
+# source: frankrowe GH (see README)
+GEOJSON_PATH = FILES_DIR / "maryland-counties.geojson"
+
+# Load GeoJSON from local data file
+with open(GEOJSON_PATH.resolve()) as f:
+    counties = json.load(f)
+
+
+# Total population by county
+POP_EST_PATH = FILES_DIR / "Population_Estimates_by_County.csv"
+
+# Build dataframe of all county population to get percentages
+# Source: https://www.census.gov/
+pop_est_by_county = pd.read_csv(POP_EST_PATH.resolve(), dtype={"Population": int})
+
 
 # -----------------------------------------------------------------------------
 
@@ -197,7 +150,7 @@ app.layout = html.Div(
                                     style={"color": "#ffffff"},
                                 ),
                                 dcc.Dropdown(
-                                    id="select_dose",
+                                    id="selected-dose",
                                     options=[
                                         {
                                             "label": "Total at least one vaccine",
@@ -249,7 +202,7 @@ app.layout = html.Div(
                             [
                                 html.P("Adjust the timeline slider:"),
                                 dcc.Slider(
-                                    id="select_date",
+                                    id="selected-date-index",
                                     min=numdate[0],
                                     max=numdate[-1],
                                     value=numdate[-1],
@@ -305,8 +258,8 @@ app.layout = html.Div(
 @app.callback(
     Output("choropleth", "figure"),
     [
-        Input("select_date", "value"),
-        Input("select_dose", "value"),
+        Input("selected-date-index", "value"),
+        Input("selected-dose", "value"),
         Input("select-absolute-relative", "value"),
     ],
 )
@@ -319,7 +272,7 @@ def display_choropleth(
     print(selected_dose, type(selected_dose))
     print(selected_button, type(selected_button))
 
-    slider_date = get_slider_date(df, selected_date)
+    slider_date = get_slider_date(df["VACCINATION_DATE"], selected_date)
 
     dff1 = filter_by_date(df, slider_date)
 
@@ -379,18 +332,18 @@ def display_choropleth(
         Output("output-table", "data"),
     ],
     [
-        Input("select_date", "value"),
+        Input("selected-date-index", "value"),
         Input("choropleth", "clickData"),
         Input("select-absolute-relative", "value"),
     ],
 )
-def display_stats(selected_date, clickData, selected_button):
+def display_stats(selected_date_index, clickData, selected_button):
     """Display additional data on county that is selected via click on the map"""
 
     print(clickData)
     print(type(clickData))
 
-    slider_date = get_slider_date(df, selected_date)
+    slider_date = get_slider_date(df["VACCINATION_DATE"], selected_date_index)
     dff2 = filter_by_date(df, slider_date)
 
     output_date_location = f"Date selected: **{slider_date.strftime('%B %-d, %Y')}**"
@@ -457,9 +410,9 @@ def display_stats(selected_date, clickData, selected_button):
 # Helper Functions
 
 
-def get_slider_date(df, selected_date):
+def get_slider_date(date_series, selected_date_index):
     """Return timestamp based on numerical index provided by slider"""
-    return df["VACCINATION_DATE"].unique()[selected_date]
+    return date_series.unique()[selected_date_index]
 
 
 def filter_by_date(df, slider_date):
@@ -535,4 +488,4 @@ def format_table(percent=False):
 
 
 if __name__ == "__main__":
-    app.run_server(debug=True)
+    app.run_server(debug=True, host='0.0.0.0')

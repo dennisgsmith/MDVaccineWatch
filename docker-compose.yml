@@ -1,0 +1,29 @@
+version: '3'
+
+services:
+    scheduler:
+        build: ./backend
+        restart: always
+        environment:
+          METHOD: 'startup'
+        volumes:
+            # Sync container container clock to local machine
+            - /etc/localtime:/etc/localtime:ro
+            # Persist logs
+            - ./backend/logs:/data/logs
+            # Share data from backend with app
+            - covid:/data/files
+    app:
+        build: ./app
+        restart: always
+        ports:
+          - 5252:8050
+        depends_on: 
+          - scheduler
+        volumes:
+            - /etc/localtime:/etc/localtime:ro
+            - ./app:/app
+            - covid:/app/files
+
+volumes:
+  covid:
