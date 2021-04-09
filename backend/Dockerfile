@@ -9,8 +9,4 @@ RUN pip install --upgrade pip \
 
 COPY . .
 
-ADD ./main.py ./main.py
-
-ADD ./pulldata.py ./pulldata.py
-
 CMD [ "python", "main.py" ]

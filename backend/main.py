@@ -7,6 +7,7 @@ sys.path.append(pulldata_path.resolve())
 
 import pulldata  # Local import
 import schedule
+import time
 
 BACKEND_DIR = Path(__file__).parent  # Directory of current file
 # Navigate to folder that stores vaccine data
@@ -21,3 +22,8 @@ def get_data():
 
 if __name__ == "__main__":
     schedule.every().day.at("10:00").do(get_data)
+    
+    while True:
+        n = schedule.idle_seconds()
+        time.sleep(n - 1) # sleep until next job
+        schedule.run_pending()
