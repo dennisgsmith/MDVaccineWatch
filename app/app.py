@@ -269,7 +269,7 @@ def display_choropleth(
     print(selected_dose, type(selected_dose))
     print(selected_button, type(selected_button))
 
-    slider_date = get_slider_date(df["VACCINATION_DATE"], selected_date)
+    slider_date = get_slider_date(df, selected_date)
 
     dff1 = filter_by_date(df, slider_date)
 
@@ -340,7 +340,7 @@ def display_stats(selected_date_index, clickData, selected_button):
     print(clickData)
     print(type(clickData))
 
-    slider_date = get_slider_date(df["VACCINATION_DATE"], selected_date_index)
+    slider_date = get_slider_date(df, selected_date_index)
     dff2 = filter_by_date(df, slider_date)
 
     output_date_location = f"Date selected: **{slider_date.strftime('%B %-d, %Y')}**"
@@ -407,9 +407,9 @@ def display_stats(selected_date_index, clickData, selected_button):
 # Helper Functions
 
 
-def get_slider_date(date_series, selected_date_index):
+def get_slider_date(df, selected_date_index):
     """Return timestamp based on numerical index provided by slider"""
-    return date_series.unique()[selected_date_index]
+    return df["VACCINATION_DATE"].unique()[selected_date_index]
 
 
 def filter_by_date(df, slider_date):
@@ -455,7 +455,6 @@ def get_county_stats(dff, percent=False):
         # Return the percent of the population vaccinated for
         return merged_df
 
-    print(dff.columns)
     # Otherwise, just use absolute numbers
     return dff
 
