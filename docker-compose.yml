@@ -13,6 +13,9 @@ services:
       - ./backend/logs:/backend/logs
       # Share data from backend with app
       - data_bridge:/backend/scheduled_data
+    environment:
+      # Allow unbuffered stream for logs
+      - PYTHONUNBUFFERED="stout"
   # Build webapp
   app:
     container_name: MDVaccineWatch-app
