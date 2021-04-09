@@ -1,5 +1,20 @@
+from pathlib import Path
+import time
+
 from urllib.error import HTTPError
 import pandas as pd
+import schedule
+
+
+BACKEND_DIR = Path(__file__).parent  # Directory of current file
+# Navigate to folder that stores vaccine data
+LOCAL_FILE_PATH = BACKEND_DIR / "scheduled_data" / "MD_Vax_Data.csv"
+# Get updated COVID-19 data from https://data.imap.maryland.gov/
+DATA_URL = "https://opendata.arcgis.com/datasets/89c9c1236ca848188d93beb5928f4162_0.csv"
+
+
+def main():
+    get_vax_data(DATA_URL, LOCAL_FILE_PATH)
 
 
 def get_vax_data(url, local_file_path):
@@ -58,3 +73,12 @@ def get_vax_data(url, local_file_path):
         print("SUCCESS: Updated local backup (overwrite)")
 
     return df
+
+
+if __name__ == "__main__":
+    schedule.every().day.at("10:00").do(main)
+    
+    while True:
+        n = schedule.idle_seconds()
+        time.sleep(n - 1) # sleep until next job
+        schedule.run_pending()
