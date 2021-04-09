@@ -24,7 +24,6 @@ If the request is successful, the file is saved locally in the data folder (and 
 `schedule` is being used to automate the jobs. I's a very straightforward and easy to use module because of it's readbility. Learn more about it [here](https://schedule.readthedocs.io/en/stable/).
 
 # /app
-Run the Dash application and read data in from the backend
 
 ## /files
 `maryland-counties.geojson` allows the `plotly.express.choropleth_mapbox` to create a mask layer that is superimposed on the map. This creates interactive elements for each county.
