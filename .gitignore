@@ -1,6 +1,9 @@
 # Local
 .mapbox_token
 
+# venv
+.requirements.txt
+
 # VSCode
 .vscode/
 

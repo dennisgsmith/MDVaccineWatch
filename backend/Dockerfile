@@ -1,12 +1,16 @@
 FROM python:3.8
 
-WORKDIR /data
+COPY ./requirements.txt /backend/requirements.txt
 
-COPY ./requirements.txt /data/requirements.txt
+WORKDIR /backend
 
-RUN python3 -m pip3 install --upgrade pip \
-  && python3 -m pip3 install -r requirements.txt
+RUN pip install --upgrade pip \
+    && pip install -r requirements.txt
 
-COPY . /data
+COPY . .
 
-CMD [ "python3", "-u", "main.py" ]
+ADD ./main.py ./main.py
+
+ADD ./pulldata.py ./pulldata.py
+
+CMD [ "python", "main.py" ]

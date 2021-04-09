@@ -13,10 +13,7 @@ import plotly.express as px
 # -----------------------------------------------------------------------------
 
 
-PARENT_DIR = Path(__file__).resolve().parents[1]  # Go two directories up from file location
-FILES_DIR = PARENT_DIR / "backend" / "files"  # Navigate to folder that stores data
-LOCAL_FILE_PATH = FILES_DIR / "scheduled" / "MD_Vax_Data.csv"  # Path to vaccine data
-
+FILES_DIR = Path(__file__).parent / "files"
 
 # Optional mapbox token for styling
 try:
@@ -27,9 +24,9 @@ except FileNotFoundError:
     STYLE = "carto-darkmatter"
     MAPBOX_TOKEN = None
 
-
+VAX_DATA_PATH = FILES_DIR / "scheduled_data" / "MD_Vax_Data.csv"  # Path to vaccine data
 # Load MD Vaccine Data
-df = pd.read_csv(LOCAL_FILE_PATH.resolve())
+df = pd.read_csv(VAX_DATA_PATH.resolve())
 
 # Convert to datetime
 df["VACCINATION_DATE"] = pd.to_datetime(df["VACCINATION_DATE"], format="%Y-%m-%d")
@@ -488,4 +485,4 @@ def format_table(percent=False):
 
 
 if __name__ == "__main__":
-    app.run_server(debug=True, host='0.0.0.0')
+    app.run_server(debug=True, host="0.0.0.0", port=8050)
