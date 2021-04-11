@@ -1,3 +1,4 @@
+import os
 import json
 from pathlib import Path
 
@@ -63,7 +64,6 @@ POP_EST_PATH = FILES_DIR / "Population_Estimates_by_County.csv"
 # Source: https://www.census.gov/
 pop_est_by_county = pd.read_csv(POP_EST_PATH.resolve(), dtype={"Population": int})
 
-
 # -----------------------------------------------------------------------------
 
 # Import CSS-referenced font
@@ -75,6 +75,8 @@ external_stylesheets = [
 ]
 # Compose app and generate HTML
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
+server = app.server
+PORT = int(os.environ.get("PORT", 8050))
 app.title = "#MDVaccineWatch"
 
 app.layout = html.Div(
@@ -219,7 +221,11 @@ app.layout = html.Div(
                     ],
                     className="flex-container",
                 ),  # Create Choropleth Mapbox
-                dcc.Graph(id="choropleth", className="coropleth-container"),
+                dcc.Graph(
+                    id="choropleth",
+                    config={"scrollZoom": False},
+                    className="coropleth-container"
+                ),
                 html.Div(
                     [
                         html.A("Sources:"),
@@ -482,6 +488,5 @@ def format_table(percent=False):
     else:
         return FormatTemplate.percentage(2)
 
-
 if __name__ == "__main__":
-    app.run_server(debug=True, host="0.0.0.0", port=8050)
+    app.run_server(debug=False, host="0.0.0.0", port=PORT)
