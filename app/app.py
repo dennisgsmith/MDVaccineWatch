@@ -76,7 +76,7 @@ external_stylesheets = [
 # Compose app and generate HTML
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 server = app.server
-PORT = int(os.environ.get("PORT", 8050))
+PORT = int(os.environ.get("PORT", 5000))
 app.title = "#MDVaccineWatch"
 
 app.layout = html.Div(

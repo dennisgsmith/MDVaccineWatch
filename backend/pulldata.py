@@ -1,4 +1,5 @@
 from pathlib import Path
+from logging.handlers import TimedRotatingFileHandler
 import logging
 import time
 
@@ -15,12 +16,21 @@ DATA_URL = "https://opendata.arcgis.com/datasets/89c9c1236ca848188d93beb5928f416
 # Path to logs
 LOG_PATH = BACKEND_DIR / "logs" / "backend.log"
 
-# Configure logging format
-logging.basicConfig(
+# Delete logs after 90 created
+handler = TimedRotatingFileHandler(
     filename=LOG_PATH.resolve(),
+    when="D",
+    interval=1,
+    backupCount=90,
+    encoding="utf-8",
+    delay=False
+)
+# Configure logging format for all loggers
+logging.basicConfig(
     level=logging.DEBUG,
     format="%(asctime)s - %(message)s",
     datefmt="%d-%b-%Y %H:%M:%S",
+    handlers=[handler]
 )
 schedule_logger = logging.getLogger("schedule")
 schedule_logger.setLevel(level=logging.DEBUG)
