@@ -72,11 +72,11 @@ Check out the [docker docs](https://docs.docker.com/get-started/) if you wnat to
   - If you would like to use the "dark" theme, or one of the other mapbox themes that require a free token
   - After you sign up for an account and copy your account token to your clipboard:
     - Make sure you're in the project's root directory
-    - Run `echo 'PASTE_YOUR_MAPBOX_KEY_HERE' > app/.mapbox_token` in the `app` directory
+    - Run `echo 'PASTE_YOUR_MAPBOX_KEY_HERE' > app/.mapbox_token`
   - Otherwise, the theme will default to "carto-darkmatter". Visit the [plotly docs](https://plotly.github.io/plotly.py-docs/generated/plotly.express.choropleth_mapbox.html) for more information.
 4. Run `docker-compose build`
 5. Run `docker-compose up` (add the `-d` flag to run in detached mode)
-6. Open the host port in your browser (default http://0.0.0.0:8050/) and preview the site!
+6. Open the host port in your browser (default http://0.0.0.0:5000/) and preview the site!
 7. If you have any feedback or run into issues, please feel free to contact me 🙂 📩  dennisgsmith12@gmail.com
 
 ## Credits
