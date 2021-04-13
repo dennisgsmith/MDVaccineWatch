@@ -12,7 +12,7 @@ I got the idea for this project while following along with a [Real Python tutori
 - The data is easily accessable
 - The size of the data is relatively small
 
-After reading through some of the [Plotly|Dash documentation](https://dash.plotly.com), I structured the html with the Dash API and mapped my data to each county location using GEOJSON data. Then, I created the interfacing tools used to manipulate and filter the data using callback functions.
+After reading through some of the [Plotly/Dash documentation](https://dash.plotly.com), I structured the html with the Dash API and mapped my data to each county location using GEOJSON data. Then, I created the interfacing tools used to manipulate and filter the data using callback functions.
 
 At this point, I was just reading the data from a static CSV file. The ultimate goal would be to scedule updating the data as a job. I did this by creating a seperate Python script that retrieves the data via "GET" request with Pandas and transforms it, before storing it as a local CSV file to be loaded into the Dash application frontend. The local CSV ensures that the web app will still work if there is an issue retrieving the data from the url.
 
