@@ -76,7 +76,7 @@ Check out the [docker docs](https://docs.docker.com/get-started/) if you wnat to
   - Otherwise, the theme will default to "carto-darkmatter". Visit the [plotly docs](https://plotly.github.io/plotly.py-docs/generated/plotly.express.choropleth_mapbox.html) for more information.
 4. Run `docker-compose build`
 5. Run `docker-compose up` (add the `-d` flag to run in detached mode)
-6. Open the host port in your browser (default http://0.0.0.0:5000/) and preview the site!
+6. Open the host port in your browser (default http://0.0.0.0:8050/) and preview the site!
 7. If you have any feedback or run into issues, please feel free to contact me 🙂 📩  dennisgsmith12@gmail.com
 
 ## Credits
@@ -85,3 +85,10 @@ The GeoJSON mask of Maryland counties is provided courtesy of @frankrowe (https:
 Vaccination data is provided by Maryland State Gov. (https://data.imap.maryland.gov/)
 
 Total population by county is provided by the U.S. Census Beurau (https://www.census.gov/).
+
+The favicon was generated using the following graphics from Twitter Twemoji:
+
+- Graphics Title: 1f489.svg
+- Graphics Author: Copyright 2020 Twitter, Inc and other contributors (https://github.com/twitter/twemoji)
+- Graphics Source: https://github.com/twitter/twemoji/blob/master/assets/svg/1f489.svg
+- Graphics License: CC-BY 4.0 (https://creativecommons.org/licenses/by/4.0/)
