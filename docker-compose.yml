@@ -22,7 +22,7 @@ services:
     build: ./app
     # restart: on-failure
     ports:
-      - 5000:5000
+      - 8050:8050
     depends_on:
       - scheduler
     volumes:
