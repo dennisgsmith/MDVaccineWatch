@@ -8,31 +8,32 @@ If you would like to make a similar project of your own, feel free to fork the r
 
 I got the idea for this project while following along with a [Real Python tutorial on Dash](https://realpython.com/python-dash/). After completing the tutorial and reading thorugh some of Dash and Plotly's documentation, I wanted to simply try mapping a vaccine data from a CSV file (maryland.gov) to county positions on a map. I chose my home state of maryland becuase it is:
 
-      - Relevent
-      - The data is easily accessable
-      - The size of the data is relatively small
+- Relevent
+- The data is easily accessable
+- The size of the data is relatively small
 
-After reading through some of the Dash and Plotly documentation, I figured out how to structure with `dash.html_components` and map my data to each county location using GEOJSON data. Then, I created the interfacing tools used to manipulate and filter the data using callback functions.
+After reading through some of the [Plotly|Dash documentation](https://dash.plotly.com), I structured the html with the Dash API and mapped my data to each county location using GEOJSON data. Then, I created the interfacing tools used to manipulate and filter the data using callback functions.
 
 At this point, I was just reading the data from a static CSV file. The ultimate goal would be to scedule updating the data as a job. I did this by creating a seperate Python script that retrieves the data via "GET" request with Pandas and transforms it, before storing it as a local CSV file to be loaded into the Dash application frontend. The local CSV ensures that the web app will still work if there is an issue retrieving the data from the url.
 
-__Ideally, I would establish a connection to the database that hosts the information and send SQL queries to regularly update it, but that service (ArcGIS) is proprietary, so I an limited to downloading the entire CSV.__
+*Ideally, I would establish a connection to the database that hosts the information and send SQL queries to regularly update it, but that service (ArcGIS) is proprietary, so I an limited to downloading the entire CSV.*
 
-Once I created a seperate script for the job, I found a sceduler to automate the job for me. I picked the Python module "scedule" by Dan Bader to run the update data job because it's very simple to use and does't require any external dependencies. There are microservices that could do this, but I wanted to stay as PaaS-agnostic as possible at his point because I was still considering the pros and cons of each.
+Once I created a seperate script for the job, I found a sceduler to automate the job for me. I picked the Python module [scedule](https://schedule.readthedocs.io/en/stable/) by Dan Bader to run the update data job because it's very simple to use and does't require any external dependencies. There are microservices that could do this, but I wanted to stay PaaS-agnostic at his point because I was still considering the pros and cons of each.
 
 Once the sceduler was working, it was time to containerize everything with Docker. Following the rule of "containers should do one thing", I created two pyhton:3.8 containers:
-    1. The Dash app itself (app)
-    2. The data ingestion job (scheduler)
+
+1. The Dash app itself (app)
+2. The data ingestion job (scheduler)
 
 I configured the containers each with their own seperate Dockerfiles and requirements.txt files. The data from the scheduler container is persisted in a volume that it shares over a network connection with the app container. Docker Compose orchestrates the execution of the Dockerfiles, managing the creation of the containers and making sure that the images are built in the necessary order.
 
-Okay, so things are looking good development-wise. I'm thinking about deploying my application to share it with the world. I had been considering Heroku due to it's cost (__free__), but I soon realized that it wouldn't be the best fit for this project because:
+Okay, so things are looking good development-wise. I'm thinking about deploying my application to share it with the world. I had been considering Heroku due to it's cost (*free*), but I soon realized that it wouldn't be the best fit for this project because:
 
-### In Heroku, filesystems are __ephemeral__
-Meaning that mounting volumes would not be possible, or at least not with this file system structure.
+**In Heroku, filesystems are *ephemeral***
+  - Meaning that mounting volumes would not be possible, or at least not with this file system structure.
 
-### There is no native support for docker-compose.yml
-Translating my docker-compose.yml to a heroku.yml didn't sound like the most productive way to spend my time.
+**There is no native support for docker-compose.yml**
+  - Translating my docker-compose.yml to a heroku.yml didn't sound like the most productive way to spend my time.
 
 
 # /backend
