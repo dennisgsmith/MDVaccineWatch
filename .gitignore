@@ -1,5 +1,6 @@
 # Local
 .mapbox_token
+mock_data.csv
 
 # venv
 .requirements.txt

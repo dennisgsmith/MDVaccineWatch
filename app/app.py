@@ -25,7 +25,13 @@ except FileNotFoundError:
     STYLE = "carto-darkmatter"
     MAPBOX_TOKEN = None
 
-VAX_DATA_PATH = FILES_DIR / "scheduled_data" / "MD_Vax_Data.csv"  # Path to vaccine data
+# Path to vaccine data persisted from schedueler container
+VAX_DATA_PATH = FILES_DIR / "scheduled_data" / "MD_Vax_Data.csv" 
+
+if not VAX_DATA_PATH.is_file():
+    # Local mock data for modular testing
+    VAX_DATA_PATH = FILES_DIR / "scheduled_data" / "mock_data.csv"
+
 # Load MD Vaccine Data
 df = pd.read_csv(VAX_DATA_PATH.resolve())
 
@@ -489,4 +495,4 @@ def format_table(percent=False):
         return FormatTemplate.percentage(2)
 
 if __name__ == "__main__":
-    app.run_server(debug=False, host="0.0.0.0", port=PORT)
+    app.run_server(debug=True, host="0.0.0.0", port=PORT)

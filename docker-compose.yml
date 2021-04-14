@@ -7,7 +7,7 @@ services:
     build: ./backend
     # restart: on-failure
     volumes:
-      # Sync container container clock to local machine
+      # Sync container container clock to local timezone
       - /etc/localtime:/etc/localtime:ro
       # Persist logs
       - ./backend/logs:/backend/logs
