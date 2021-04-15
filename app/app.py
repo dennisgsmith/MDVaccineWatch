@@ -53,7 +53,6 @@ col_list = [
     "Fully Vaccinated",
 ]
 
-
 # Get Maryland counties layer as geojson
 # source: frankrowe GH (see README)
 GEOJSON_PATH = FILES_DIR / "maryland-counties.geojson"
