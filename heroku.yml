@@ -9,6 +9,5 @@ build:
   docker:
     web: app/Dockerfile
     scheduler: backend/Dockerfile
-release:
-  image: scheduler
-  command: python pulldata.py
+run:
+  web: gunicorn -w 4 app:server -b 0.0.0.0:8050
