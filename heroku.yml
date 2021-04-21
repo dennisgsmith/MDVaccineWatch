@@ -7,6 +7,6 @@ setup:
 build:
   docker:
     web: app/Dockerfile
-    scheduler: backend/Dockerfile
+    worker: backend/Dockerfile
 run:
-  web: ./gunicorn_starter.sh
+  web: gunicorn hello:app
