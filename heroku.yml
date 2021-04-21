@@ -12,7 +12,5 @@ build:
     worker: backend/Dockerfile
 
 run:
-  worker:
-    command: python pulldata.py
   web:
     command: python app.py
