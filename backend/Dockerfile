@@ -1,4 +1,4 @@
-FROM python:3.8 AS scheduler
+FROM python:3.8 AS worker
 
 COPY ./requirements.txt /backend/requirements.txt
 

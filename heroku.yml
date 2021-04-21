@@ -10,4 +10,4 @@ build:
     web: app/Dockerfile
     worker: backend/Dockerfile
 run:
-  web: gunicorn --chdir app app:server
+  web: gunicorn app:server
