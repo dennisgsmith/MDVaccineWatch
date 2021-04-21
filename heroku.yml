@@ -9,4 +9,4 @@ build:
     web: app/Dockerfile
     scheduler: backend/Dockerfile
 run:
-  web: gunicorn -w 4 app:server -b 0.0.0.0:8050
+  web: ./gunicorn_starter.sh
