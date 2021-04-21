@@ -1,7 +1,6 @@
 setup:
   addons:
     - plan: scheduler
-      AS: DATAPULL_JOB
   config:
     AWS_S3_BUCKET: mdvaccinewatch-objstore
     AWS_DEFAULT_REGION: us-east-1
