@@ -12,8 +12,3 @@ build:
 release:
   image: scheduler
   command: python pulldata.py
-run:
-  web:
-    command:
-      - /min/bash
-      - exec gunicorn -w 4 app:server -b 0.0.0.0:8050
