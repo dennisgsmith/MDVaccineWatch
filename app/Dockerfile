@@ -10,6 +10,6 @@ RUN pip install --upgrade pip \
 
 COPY . .
 
-EXPOSE 8050
+ENV PORT=8050
 
 CMD [ "python", "app.py" ]

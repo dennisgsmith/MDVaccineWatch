@@ -1,4 +1,5 @@
 import os
+import io
 import json
 from pathlib import Path
 
@@ -11,29 +12,51 @@ import dash_html_components as html
 from dash.dependencies import Input, Output
 import plotly.express as px
 
+import boto3
+
 # -----------------------------------------------------------------------------
 
-
 FILES_DIR = Path(__file__).parent / "files"
+AWS_S3_BUCKET = os.getenv("AWS_S3_BUCKET")
+AWS_DEFAULT_REGION = os.getenv("AWS_DEFAULT_REGION")
+MB_TOKEN = os.getenv("MB_TOKEN")
 
-# Optional mapbox token for styling
-try:
-    STYLE = "dark"
-    MAPBOX_TOKEN = open(".mapbox_token").read()
-except FileNotFoundError:
-    print("Using background that does not require token")
-    STYLE = "carto-darkmatter"
-    MAPBOX_TOKEN = None
+# Load data from S3 bucket
+s3_resource = boto3.resource('s3')
 
-# Path to vaccine data persisted from schedueler container
-VAX_DATA_PATH = FILES_DIR / "scheduled_data" / "MD_Vax_Data.csv" 
+# S3: Optional mapbox token for styling
 
-if not VAX_DATA_PATH.is_file():
-    # Local mock data for modular testing
-    VAX_DATA_PATH = FILES_DIR / "scheduled_data" / "mock_data.csv"
 
-# Load MD Vaccine Data
-df = pd.read_csv(VAX_DATA_PATH.resolve())
+if MB_TOKEN:
+    MB_STYLE = "dark"
+else:
+    print("Using mapbox theme that does not require token")
+    MB_TOKEN = None
+    MB_STYLE = "carto-darkmatter"
+
+# Get Maryland counties layer as geojson
+# source: frankrowe GH (see README)
+GEOJSON_PATH = FILES_DIR / "maryland-counties.geojson"
+
+# Load GeoJSON from local data file
+with open(GEOJSON_PATH.resolve()) as f:
+    geojson_counties = json.load(f)
+
+# Total population by county
+POP_EST_PATH = FILES_DIR / "Population_Estimates_by_County.csv"
+
+# Build dataframe of all county population to get percentages
+# Source: https://www.census.gov/
+pop_est_by_county = pd.read_csv(POP_EST_PATH.resolve(), dtype={"Population": int})
+
+# Get vaccine data written to S3 by scheduler job
+vaccine_data_obj = s3_resource.meta.client.get_object(
+    Bucket=AWS_S3_BUCKET,
+    Key='scheduled_data/MD_Vax_Data.csv'
+)
+df = pd.read_csv(io.BytesIO(vaccine_data_obj['Body'].read()))  # Read csv from S3
+
+#----------------------------------CLEAN UP DATA--------------------------------
 
 # Convert to datetime
 df["VACCINATION_DATE"] = pd.to_datetime(df["VACCINATION_DATE"], format="%Y-%m-%d")
@@ -52,22 +75,6 @@ col_list = [
     "At Least One Vaccine",
     "Fully Vaccinated",
 ]
-
-# Get Maryland counties layer as geojson
-# source: frankrowe GH (see README)
-GEOJSON_PATH = FILES_DIR / "maryland-counties.geojson"
-
-# Load GeoJSON from local data file
-with open(GEOJSON_PATH.resolve()) as f:
-    counties = json.load(f)
-
-
-# Total population by county
-POP_EST_PATH = FILES_DIR / "Population_Estimates_by_County.csv"
-
-# Build dataframe of all county population to get percentages
-# Source: https://www.census.gov/
-pop_est_by_county = pd.read_csv(POP_EST_PATH.resolve(), dtype={"Population": int})
 
 # -----------------------------------------------------------------------------
 
@@ -299,7 +306,7 @@ def display_choropleth(
     # Create Plotly mapbox figure
     fig = px.choropleth_mapbox(
         dff1,
-        geojson=counties,
+        geojson=geojson_counties,
         locations="County",
         featureidkey="properties.name",
         zoom=6.8,
@@ -311,7 +318,7 @@ def display_choropleth(
         opacity=0.7,
     )
     # mapbox theme & layout
-    fig.update_layout(mapbox_style=STYLE, mapbox_accesstoken=MAPBOX_TOKEN)
+    fig.update_layout(mapbox_style=MB_STYLE, mapbox_accesstoken=MB_TOKEN)
     fig.update_layout(margin={"r": 0, "t": 0, "l": 0, "b": 0})
 
     # Update Colorbar style

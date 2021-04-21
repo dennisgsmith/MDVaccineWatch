@@ -1,34 +1,33 @@
 version: "3.9"
 
+# Use for local testing
 services:
   # Build backend
   scheduler:
     container_name: MDVaccineWatch-backend
     build: ./backend
-    # restart: on-failure
-    volumes:
-      # Sync container container clock to local timezone
-      - /etc/localtime:/etc/localtime:ro
-      # Persist logs
-      - ./backend/logs:/backend/logs
-      # Share data from backend with app
-      - data_bridge:/backend/scheduled_data
     environment:
       # Allow unbuffered stream for logs
       - PYTHONUNBUFFERED="stout"
+      - AWS_S3_BUCKET
+      - AWS_DEFAULT_REGION
+      - MB_TOKEN
+    # DEV
+    volumes:
+      - ${HOME}/.aws/credentials:/root/.aws/credentials:ro
+
   # Build webapp
   app:
     container_name: MDVaccineWatch-app
     build: ./app
-    # restart: on-failure
+    environment:
+      - AWS_S3_BUCKET
+      - AWS_DEFAULT_REGION
+      - MB_TOKEN
+    # DEV
+    volumes:
+      - ${HOME}/.aws/credentials:/root/.aws/credentials:ro
     ports:
       - 8050:8050
     depends_on:
       - scheduler
-    volumes:
-      - /etc/localtime:/etc/localtime:ro
-      - ./app:/app
-      - data_bridge:/app/files/scheduled_data
-
-volumes:
-  data_bridge:

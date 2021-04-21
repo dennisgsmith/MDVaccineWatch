@@ -1,64 +1,34 @@
-from pathlib import Path
-from logging.handlers import TimedRotatingFileHandler
-import logging
-import time
+import os
+import io
 
 from urllib.error import HTTPError
 import pandas as pd
-import schedule
+import boto3
 
-# Configure path for data read / write
-BACKEND_DIR = Path(__file__).parent  # Directory of current file
-# Navigate to folder that stores vaccine data
-LOCAL_FILE_PATH = BACKEND_DIR / "scheduled_data" / "MD_Vax_Data.csv"
-# Get updated COVID-19 data from https://data.imap.maryland.gov/
+AWS_S3_BUCKET = os.getenv("AWS_S3_BUCKET")
+AWS_DEFAULT_REGION = os.getenv("AWS_DEFAULT_REGION")
+
 DATA_URL = "https://opendata.arcgis.com/datasets/89c9c1236ca848188d93beb5928f4162_0.csv"
-# Path to logs
-LOG_PATH = BACKEND_DIR / "logs" / "backend.log"
 
-# Delete logs after 90 created
-handler = TimedRotatingFileHandler(
-    filename=LOG_PATH.resolve(),
-    when="D",
-    interval=1,
-    backupCount=90,
-    encoding="utf-8",
-    delay=False
-)
-# Configure logging format for all loggers
-logging.basicConfig(
-    level=logging.DEBUG,
-    format="%(asctime)s - %(message)s",
-    datefmt="%d-%b-%Y %H:%M:%S",
-    handlers=[handler]
-)
-schedule_logger = logging.getLogger("schedule")
-schedule_logger.setLevel(level=logging.DEBUG)
-
-logging.info("STARTUP INITIALIZED")
-
+# S3: Define location to write (and overwrite) vaccine data
+s3 = boto3.resource('s3')
 
 def main():
-    logging.info("Sceduled datapull job executing...")
-    get_vax_data(DATA_URL, LOCAL_FILE_PATH)
-    logging.info("datapull job executed")
+    get_vax_data(DATA_URL, s3)
 
-
-def get_vax_data(url, local_file_path):
+def get_vax_data(url, s3_resource):
     """
-    Attempt to get updated csv from URL, default to most recent local copy if request fails
-    Transform and clean the data before saving it
-    Return the csv as a pandas dataframe
+    Attempt to get updated csv from URL
+    Transform and clean the data before saving it to S3 if successful
+    Upload df as csv to AWS S3
     """
     try:
         df = pd.read_csv(url)  # Pandas reads directly from URL input
-        logging.info("DATA URL Working")
 
-    except HTTPError:
-        logging.error("There was a problem accessing the maryland.gov data.")
-        logging.info("Reading from backup...")
-        df = pd.read_csv(local_file_path)  # Read csv from local backup
-        logging.info("Read local copy from backup")
+    except HTTPError as e:
+        # TODO Email Admin with error summary
+        print(e)
+        return
 
     else:
         # Clean and replace the file locally as backup
@@ -93,19 +63,10 @@ def get_vax_data(url, local_file_path):
             inplace=True,
         )
 
-        df.to_csv(
-            local_file_path,
-            index=False,
-        )
-        logging.info("Updated local backup (overwrite)")
-
-    return df
+    csv_buffer = io.StringIO()
+    df.to_csv(csv_buffer)
+    s3_resource.Object(AWS_S3_BUCKET, 'MD_Vax_Data.csv').put(Body=csv_buffer.getvalue())
 
 
 if __name__ == "__main__":
     main()  # Run job on startup
-    schedule.every().day.at("10:00").do(main)  # immediately reschedule
-
-    while True:
-        schedule.run_pending()
-        time.sleep(60)  # Check time on minute
