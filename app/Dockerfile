@@ -1,5 +1,6 @@
 FROM python:3.8
 
+
 COPY ./requirements.txt /app/requirements.txt
 
 WORKDIR /app
@@ -12,4 +13,6 @@ COPY . .
 
 ENV PORT=8050
 
-CMD [ "python", "app.py" ]
+CMD [ "/bin/bash" ]
+
+ENTRYPOINT [ "./gunicorn_starter.sh" ]

@@ -88,7 +88,7 @@ external_stylesheets = [
 # Compose app and generate HTML
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 server = app.server
-PORT = int(os.environ.get("PORT", 8050))
+PORT = int(os.getenv("PORT"))
 app.title = "#MDVaccineWatch"
 
 app.layout = html.Div(
@@ -501,4 +501,4 @@ def format_table(percent=False):
         return FormatTemplate.percentage(2)
 
 if __name__ == "__main__":
-    app.run_server(debug=True, host="0.0.0.0", port=PORT)
+    app.run_server(host='0.0.0.0', port=PORT, debug=True)
