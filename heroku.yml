@@ -4,13 +4,10 @@ setup:
   config:
     AWS_S3_BUCKET: mdvaccinewatch-objstore
     AWS_DEFAULT_REGION: us-east-1
-    # ADD MB_TOKEN AND AWS CREDS TO HEROKU ENV
-
 build:
   docker:
     web: app/Dockerfile
     worker: backend/Dockerfile
-
 run:
   web:
     command: python app.py
