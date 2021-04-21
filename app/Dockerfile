@@ -1,4 +1,4 @@
-FROM python:3.8
+FROM python:3.8 AS web
 
 
 COPY ./requirements.txt /app/requirements.txt
