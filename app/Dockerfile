@@ -13,6 +13,4 @@ COPY . .
 
 ENV PORT=8050
 
-CMD [ "/bin/bash" ]
-
 ENTRYPOINT [ "./gunicorn_starter.sh" ]
