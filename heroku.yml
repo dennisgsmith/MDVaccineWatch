@@ -1,13 +1,12 @@
 setup:
   addons:
-    - plan: scheduler
+    - plan: heroku-postgresql
+      as: DATABASE_URL
   config:
-    AWS_S3_BUCKET: mdvaccinewatch-objstore
-    AWS_DEFAULT_REGION: us-east-1
     WEB_CONCURRENCY: 2
+    PYTHONUNBUFFERED: "stout"
 build:
   docker:
-    web: app/Dockerfile
-    worker: backend/Dockerfile
+    web: Dockerfile
 run:
   web: gunicorn app:server

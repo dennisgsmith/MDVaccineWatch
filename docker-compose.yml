@@ -2,32 +2,26 @@ version: "3.9"
 
 # Use for local testing
 services:
-  # Build backend
-  scheduler:
-    container_name: MDVaccineWatch-backend
-    build: ./backend
+
+  # Initialize db
+  pgadmin:
+    container_name: pgadmin4_container
+    image: dpage/pgadmin4
+    restart: always
     environment:
-      # Allow unbuffered stream for logs
-      - PYTHONUNBUFFERED="stout"
-      - AWS_S3_BUCKET
-      - AWS_DEFAULT_REGION
-      - MB_TOKEN
-    # DEV
-    volumes:
-      - ${HOME}/.aws/credentials:/root/.aws/credentials:ro
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: root
+    ports:
+      - "5050:80"
 
   # Build webapp
-  app:
-    container_name: MDVaccineWatch-app
-    build: ./app
+  web:
+    container_name: mdvaccinewatch_webapp_container
+    build: .
     environment:
-      - AWS_S3_BUCKET
-      - AWS_DEFAULT_REGION
+      - PYTHONUNBUFFERED="stout"
+      # Below vars need to be exported directly to heroku prod env
       - MB_TOKEN
-    # DEV
-    volumes:
-      - ${HOME}/.aws/credentials:/root/.aws/credentials:ro
+      - DATABASE_URL
     ports:
       - 8050:8050
-    depends_on:
-      - scheduler

@@ -1,9 +1,9 @@
 FROM python:3.8 AS web
 
 
-COPY ./requirements.txt /app/requirements.txt
+COPY ./requirements.txt /webapp/requirements.txt
 
-WORKDIR /app
+WORKDIR /webapp
 
 RUN pip install --upgrade pip \
     && pip install wheel \

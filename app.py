@@ -11,21 +11,18 @@ import dash_core_components as dcc
 import dash_html_components as html
 from dash.dependencies import Input, Output
 import plotly.express as px
-
-import boto3
+import sqlalchemy
 
 # -----------------------------------------------------------------------------
 
 FILES_DIR = Path(__file__).parent / "files"
-AWS_S3_BUCKET = os.getenv("AWS_S3_BUCKET")
-AWS_DEFAULT_REGION = os.getenv("AWS_DEFAULT_REGION")
+
+# AWS_S3_BUCKET = os.getenv("AWS_S3_BUCKET")
+# AWS_DEFAULT_REGION = os.getenv("AWS_DEFAULT_REGION")
+# # Load data from S3 bucket
+# s3_resource = boto3.resource('s3')
+
 MB_TOKEN = os.getenv("MB_TOKEN")
-
-# Load data from S3 bucket
-s3_resource = boto3.resource('s3')
-
-# S3: Optional mapbox token for styling
-
 
 if MB_TOKEN:
     MB_STYLE = "dark"
@@ -49,22 +46,41 @@ POP_EST_PATH = FILES_DIR / "Population_Estimates_by_County.csv"
 # Source: https://www.census.gov/
 pop_est_by_county = pd.read_csv(POP_EST_PATH.resolve(), dtype={"Population": int})
 
-# Get vaccine data written to S3 by scheduler job
-vaccine_data_obj = s3_resource.meta.client.get_object(
-    Bucket=AWS_S3_BUCKET,
-    Key='scheduled_data/MD_Vax_Data.csv'
-)
-df = pd.read_csv(io.BytesIO(vaccine_data_obj['Body'].read()))  # Read csv from S3
+# # Get vaccine data written to S3 by scheduler job
+# vaccine_data_obj = s3_resource.meta.client.get_object(
+#     Bucket=AWS_S3_BUCKET,
+#     Key='scheduled_data/MD_Vax_Data.csv'
+# )
+# df = pd.read_csv(io.BytesIO(vaccine_data_obj['Body'].read()))  # Read csv from S3
+
+DATABASE_URL = os.environ['DATABASE_URL']
+engine = sqlalchemy.create_engine(DATABASE_URL)
+
+df = pd.read_sql_table("vaccines", engine)
+df.drop_duplicates(inplace=True)
 
 #----------------------------------CLEAN UP DATA--------------------------------
 
+df.rename(
+    columns={
+        "vaccination_date": "date",
+        "county": "County",
+        "firstdosecumulative": "First Dose",
+        "seconddosecumulative": "Second Dose",
+        "singledosecumulative": "Single Dose",
+        "fullyvaccinated": "Fully Vaccinated",
+        "atleastonevaccine": "At Least One Vaccine"
+    },
+    inplace=True,
+)
+
 # Convert to datetime
-df["VACCINATION_DATE"] = pd.to_datetime(df["VACCINATION_DATE"], format="%Y-%m-%d")
+df["date"] = pd.to_datetime(df["date"], format="%Y-%m-%d")
 
 # Sort by date ad create numeric representation for each unique date for numeric Slider input
-df.sort_values(by="VACCINATION_DATE", inplace=True)
+df.sort_values(by="date", inplace=True)
 
-numdate = [x for x in range(len(df["VACCINATION_DATE"].unique()))]
+numdate = [x for x in range(len(df["date"].unique()))]
 
 # Define the columns to subset globally to make it easier to reference them
 col_list = [
@@ -218,12 +234,12 @@ app.layout = html.Div(
                                     max=numdate[-1],
                                     value=numdate[-1],
                                     marks={
-                                        "label": "VACCINATION_DATE",
+                                        "label": "date",
                                         numdate[0]: min(
-                                            df["VACCINATION_DATE"]
+                                            df["date"]
                                         ).strftime("%m/%d/%Y"),
                                         numdate[-1]: max(
-                                            df["VACCINATION_DATE"]
+                                            df["date"]
                                         ).strftime("%m/%d/%Y"),
                                     },
                                 ),
@@ -359,9 +375,10 @@ def display_stats(selected_date_index, clickData, selected_button):
     print(type(clickData))
 
     slider_date = get_slider_date(df, selected_date_index)
+    dt_slider_date = pd.to_datetime(str(slider_date))
     dff2 = filter_by_date(df, slider_date)
 
-    output_date_location = f"Date selected: **{slider_date.strftime('%B %-d, %Y')}**"
+    output_date_location = f"Date selected: **{dt_slider_date.strftime('%B %-d, %Y')}**"
 
     p = False
     if selected_button == "Relative":
@@ -427,7 +444,7 @@ def display_stats(selected_date_index, clickData, selected_button):
 
 def get_slider_date(df, selected_date_index):
     """Return timestamp based on numerical index provided by slider"""
-    return df["VACCINATION_DATE"].unique()[selected_date_index]
+    return df["date"].unique()[selected_date_index]
 
 
 def filter_by_date(df, slider_date):
@@ -436,7 +453,7 @@ def filter_by_date(df, slider_date):
     Return filtered dataframe
     """
     dff = df.copy(deep=True)
-    return dff[dff["VACCINATION_DATE"] == slider_date]
+    return dff[dff["date"] == slider_date]
 
 
 def filter_by_county(df, county_name):
