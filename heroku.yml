@@ -2,6 +2,7 @@ setup:
   addons:
     - plan: heroku-postgresql
       as: DATABASE_URL
+    - plan: scheduler
   config:
     WEB_CONCURRENCY: 2
     PYTHONUNBUFFERED: "stout"
