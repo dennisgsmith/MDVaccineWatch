@@ -11,6 +11,4 @@ RUN pip install --upgrade pip \
 
 COPY . .
 
-ENV PORT=8050
-
 ENTRYPOINT [ "./gunicorn_starter.sh" ]

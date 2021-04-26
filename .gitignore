@@ -3,7 +3,8 @@
 mock_data.csv
 
 # venv
-.requirements.txt
+.envrc
+.direnv
 
 # VSCode
 .vscode/

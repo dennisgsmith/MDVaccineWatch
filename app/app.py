@@ -11,16 +11,12 @@ import dash_core_components as dcc
 import dash_html_components as html
 from dash.dependencies import Input, Output
 import plotly.express as px
-import sqlalchemy
+import boto3
+# import sqlalchemy
 
 # -----------------------------------------------------------------------------
 
 FILES_DIR = Path(__file__).parent / "files"
-
-# AWS_S3_BUCKET = os.getenv("AWS_S3_BUCKET")
-# AWS_DEFAULT_REGION = os.getenv("AWS_DEFAULT_REGION")
-# # Load data from S3 bucket
-# s3_resource = boto3.resource('s3')
 
 MB_TOKEN = os.getenv("MB_TOKEN")
 
@@ -46,20 +42,41 @@ POP_EST_PATH = FILES_DIR / "Population_Estimates_by_County.csv"
 # Source: https://www.census.gov/
 pop_est_by_county = pd.read_csv(POP_EST_PATH.resolve(), dtype={"Population": int})
 
-# # Get vaccine data written to S3 by scheduler job
-# vaccine_data_obj = s3_resource.meta.client.get_object(
-#     Bucket=AWS_S3_BUCKET,
-#     Key='scheduled_data/MD_Vax_Data.csv'
-# )
-# df = pd.read_csv(io.BytesIO(vaccine_data_obj['Body'].read()))  # Read csv from S3
+# -------------------------------READ DATA FROM S3-------------------------------
 
-DATABASE_URL = os.environ['DATABASE_URL']
-engine = sqlalchemy.create_engine(DATABASE_URL)
+AWS_S3_BUCKET = os.getenv("AWS_S3_BUCKET")
+AWS_DEFAULT_REGION = os.getenv("AWS_DEFAULT_REGION")
+ACCESS_ID = os.getenv("ACCESS_ID")
+ACCESS_KEY = os.getenv("ACCESS_KEY")
 
-df = pd.read_sql_table("vaccines", engine)
-df.drop_duplicates(inplace=True)
+# Load data from S3 bucket
+s3_resource = boto3.resource(
+    's3',
+    aws_access_key_id=ACCESS_ID,
+    aws_secret_access_key= ACCESS_KEY
+)
 
-#----------------------------------CLEAN UP DATA--------------------------------
+# Get vaccine data written to S3 by scheduler job
+vax_data_obj = s3_resource.meta.client.get_object(
+    Bucket=AWS_S3_BUCKET,
+    Key='MD_Vax_Data.csv'
+)
+
+def read_s3(vax_data_obj):
+    return pd.read_csv(io.BytesIO(vax_data_obj['Body'].read()))
+
+df = read_s3(vax_data_obj)
+
+# -----------------------------READ DATA FROM POSTGRES---------------------------
+
+# DATABASE_URL = os.environ["DATABASE_URL"]
+# engine = sqlalchemy.create_engine(DATABASE_URL)
+
+# def read_db(engine):
+    # df = pd.read_sql_table("vaccines", engine)
+    # df.drop_duplicates(inplace=True)
+
+# ---------------------------------CLEAN UP DATA---------------------------------
 
 df.rename(
     columns={
@@ -69,7 +86,7 @@ df.rename(
         "seconddosecumulative": "Second Dose",
         "singledosecumulative": "Single Dose",
         "fullyvaccinated": "Fully Vaccinated",
-        "atleastonevaccine": "At Least One Vaccine"
+        "atleastonevaccine": "At Least One Vaccine",
     },
     inplace=True,
 )
@@ -235,12 +252,12 @@ app.layout = html.Div(
                                     value=numdate[-1],
                                     marks={
                                         "label": "date",
-                                        numdate[0]: min(
-                                            df["date"]
-                                        ).strftime("%m/%d/%Y"),
-                                        numdate[-1]: max(
-                                            df["date"]
-                                        ).strftime("%m/%d/%Y"),
+                                        numdate[0]: min(df["date"]).strftime(
+                                            "%m/%d/%Y"
+                                        ),
+                                        numdate[-1]: max(df["date"]).strftime(
+                                            "%m/%d/%Y"
+                                        ),
                                     },
                                 ),
                             ],
@@ -252,7 +269,7 @@ app.layout = html.Div(
                 dcc.Graph(
                     id="choropleth",
                     config={"scrollZoom": False},
-                    className="coropleth-container"
+                    className="coropleth-container",
                 ),
                 html.Div(
                     [
@@ -517,5 +534,6 @@ def format_table(percent=False):
     else:
         return FormatTemplate.percentage(2)
 
+
 if __name__ == "__main__":
-    app.run_server(host='0.0.0.0', port=PORT, debug=True)
+    app.run_server(host="0.0.0.0", port=PORT, debug=True)

@@ -1,13 +1,15 @@
 setup:
   addons:
     - plan: heroku-postgresql
-      as: DATABASE_URL
-    - plan: scheduler
+      as: DATABASE
   config:
-    WEB_CONCURRENCY: 2
     PYTHONUNBUFFERED: "stout"
+    WEB_CONCURRENCY: 2
+    PORT: 8050
 build:
   docker:
-    web: Dockerfile
+    web: app/Dockerfile
+    scheduler: scheduler/Dockerfile
 run:
   web: gunicorn app:server
+  scheduler: python main.py

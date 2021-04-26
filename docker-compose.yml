@@ -12,16 +12,32 @@ services:
       PGADMIN_DEFAULT_EMAIL: admin@admin.com
       PGADMIN_DEFAULT_PASSWORD: root
     ports:
-      - "5050:80"
+      - 5050:80
 
-  # Build webapp
+  # Build scheduler to update database
+  scheduler:
+    container_name: mdvaccinewatch_scheduler_container
+    build: ./scheduler
+    environment:
+      - DATABASE_URL
+      - AWS_S3_BUCKET
+      - AWS_DEFAULT_REGION
+      - ACCESS_ID
+      - ACCESS_KEY
+    ports:
+      - 8080:8080
+
+  # Build frantend webapp
   web:
     container_name: mdvaccinewatch_webapp_container
-    build: .
+    build: ./app
     environment:
       - PYTHONUNBUFFERED="stout"
-      # Below vars need to be exported directly to heroku prod env
       - MB_TOKEN
       - DATABASE_URL
+      - AWS_S3_BUCKET
+      - AWS_DEFAULT_REGION
+      - ACCESS_ID
+      - ACCESS_KEY
     ports:
       - 8050:8050
