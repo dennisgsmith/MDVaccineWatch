@@ -1,41 +1,62 @@
 # MDVaccineWatch
 Tracking Maryland COVID-19 vaccine data by county in real time with Plotly Dash.
 
+# Overview
+COVID-19 Vaccine data is sourced from maryland.gov open databases. The data is retrieved once daily at 12:00PM EST and plotted to mabbox and tabular data vistaulizations that can be filtered with interactive componenets on the site. The app's general structure consists of a *scheduler process* and a *web process*, each separated into their own Docker containers.
 
-# /backend
+# Scheduler (/scheduler)
+The scheduler process is triggered externally by the Heroku Process Scheduler add-on (pet-project teir), which runs the proccess once a day.
+Scheduler Roles:
+1. Fetch the source data via a statically hosted CSV file and database queries
+2. Transform and clean the data
+3. Upload and overwrite the CSV data to an S3 for asset hosting and OLTP
+4. Append the queried data to a Potgres Database for archival and theoretical OLAP
 
-## pulldata.py
-Retrieve data on a dily schedule and feed it into a volume shared with the app container
+## helpers/helpers.py
+A small library of 3 helper functions for loading and transforming data
 
-### Load Data
-`pandas` loads, queries, cleans and transforms vaccine data from maryland.gov. The vaccine data (`MD_Vax_Data.csv`) queries direcly from `pd.read_csv(url)`.
+### clean_df function
+This function is called within the other helper functions that retrieve and write the data to storage. Its goal is to reformat each data pull to be consistent:
+- All of the unneeded "Daily" columns are dropped
+- Some entries in the vaccine data were blank, indicating there were no vaccines in the given county on that day. Each blank entry is replaced with a 0.
+- Try/Except blocks wrap much of the data as some of it only pertains to one method of retrieval and not both (CSV dump vs JSON updating queries)
 
-### Clean Data
-All of the unneeded "Daily" columns are dropped to improve performace of aggragate functions.
+### update_db function
+A dynamic query is generated using datetime and f-string formatting to get the data from *yesterday* to *today*, at a specified time. The query returns a JSON response that is loaded into a Pandas DataFrame, transformed, and appended to a Postgres database.
 
-Some entries in the vaccine data were blank, indicating there were no vaccines in the given county on that day. Each blank entry was replaced with a 0.
+### update_s3 function
+The vaccine data is retrieved direcly via HTTP using `pd.read_csv(url)`. It is transformed and uploaded to an AWS S3 bucket.
 
-Some etries occasionally have erronius dates entered that are later corrected. To minimize plotting error, any entries with dates before December 1, 2020 are dropped.
+## helpers/csv_to_db.py
+A simple script that uploads a local CSV copy of the data to the connected postgres database via Pandas via command line argument.
 
-### Create local backup
-If the request is successful, the file is saved locally in the data folder (and overwrites older version if one exists). If an `HTTPError` is raised, a dataframe will be created from the local csv.
+## main.py
+The entry point for execution, calling both `update_db` and `update_s3` in the `main` function call.
+Due to the implemetation of the scheduler that triggers this procces, after the main function is invoked, the script will loop on `time.sleep(1)` until the function is closed by the Heroku Process Scheduler (the regular Heroku Scheduler add-on does not support processes other than the **web** type when running docker containers).
 
-### Automated job execution
-`schedule` is being used to automate the jobs. I's a very straightforward and easy to use module because of it's readbility. Learn more about it [here](https://schedule.readthedocs.io/en/stable/).
+# Web (/app)
+The web process uses a gunicorn wsgi server.
+Web Roles:
+1. Read csv data from the configured S3 bucket into Pandas DataFrame
+2. Plot the data to a mapbox and datatable using the Plotly Dash framework
+3. Render the site's layout using Dash's html components
+4. Configure the data with callback functions to create a dynamic interface
 
-# /app
+## /files/
+- maryland-counties.geojson allows the `plotly.express.choropleth_mapbox` to create a mask layer that is superimposed on the map. This creates interactive elements for each county.
+- Population_Estimates_by_County.csv is locally stored for calcuating relative percentages dynamically.
 
-## /files
-`maryland-counties.geojson` allows the `plotly.express.choropleth_mapbox` to create a mask layer that is superimposed on the map. This creates interactive elements for each county.
+## /assets/
+This folder stores the css and favicon.ico, it is atumatically recognized and loaded into the app on initialization.
 
-`Population_Estimates_by_County.csv` is locally stored in the data folder for calcuating relative percentages dynamically.
-
-### /scheduled_data
-This directory recieves a the daily updated data from a shared Docker volume.
+## gunicorn_starter.sh
+A shell script that acts as the entrypoint for the application to run on the wsgi server when the container is spun-up with Docker. 
 
 ## app.py
-### numdate
-After entries are sorted by date, `numdate` creates a unique index of each date in in the dataframe to make it easier to interface with intercative `dash.dcc` dash core components. This will be evident in the `get_slider_date` helper function.
+The main component of the application which runs on the gunicorn wsgi server.
+
+### ETL
+The local and S3 data is loaded into the session for use. Optionally, the data can be read in directly from the postgres db. After entries are sorted by date, `numdate` creates a unique index of each date in in the dataframe to make it easier to interface with intercative `dash.dcc` dash core components. This will be evident in the `get_slider_date` helper function.
 
 ### Dash Core Components
 The `dash.html_components` allow for generation of HTML with Python. This allows for easy integration with `dcc.Graph` objects and other interface options.
@@ -46,8 +67,7 @@ The `dash.html_components` allow for generation of HTML with Python. This allows
 
 `select-date` (`dcc.Slider`) also affects both the map and the text-based stats. It does this by using the `filter_by_date` function. Since it's values can only be numeric, the dates are each assigned a unique numer that is used as an index. The `min` and `max` are set to the minimum and maximum of this index, which accesses the dates in the `VACCINATION_DATE` column of the Vaccine dataframe.
 
-### Callback
-
+### Callback functions
 `display_choropleth` takes the values from the dcc components (`selected-date-index`, `selected-dose`, and `select-absolute-relative`). When their values are changed, the fucntion updates the choropleth map based on the data they filter from the vaccine dataframe.
 
 `maryland-counties` is directly ingested into the Plotly figure (`fig`) and paired with the data using the `featureidkey="properties.name"` argument. The `locations="Counties"` argument allows the function to assign the data to each of the respective counties in the GeoJSON.
@@ -60,24 +80,6 @@ For the style, a Mapbox account and a `mapbox_accesstoken` was needed to use the
 From this data, the name of the desired selected county can be accessed, allowing to lookup that county by name on the (date-filtered) dataframe using `filter_by_county`. When triggering the function, the boolean parameter `percent=False` allows users to use the state of `select-absolute-relative` to choose how the data should be represented in the stats. This is the same data being accessed when updating the mapbox figure.
 
 In a `dash_table` `DataTable`, cells are formatted based on their respective columns `format` parameter. This parameter accepts different `dash_table` objects from modules such as `dash_table.FormatTemplate` and `dash_table.Format` The helper function `format_table` allows the conditional formatting of absolute or relative data. It accepts a boolean argument that should indicate the format of the table column it is called upon, returning the respective `dash_table` object.
-
-## Installation
-### Running the project with Docker
-
-Check out the [docker docs](https://docs.docker.com/get-started/) if you wnat to learn more about Docker.
-
-1. Make sure you have Docker and Docker Compose installed
-2. `git clone` the repo into the desired directory && cd into the repo
-3. (Optional) Cusomize the theme, [sign up for a free mapbox account](https://www.mapbox.com)
-  - If you would like to use the "dark" theme, or one of the other mapbox themes that require a free token
-  - After you sign up for an account and copy your account token to your clipboard:
-    - Make sure you're in the project's root directory
-    - Run `echo 'PASTE_YOUR_MAPBOX_KEY_HERE' > app/.mapbox_token`
-  - Otherwise, the theme will default to "carto-darkmatter". Visit the [plotly docs](https://plotly.github.io/plotly.py-docs/generated/plotly.express.choropleth_mapbox.html) for more information.
-4. Run `docker-compose build`
-5. Run `docker-compose up` (add the `-d` flag to run in detached mode)
-6. Open the host port in your browser (default http://0.0.0.0:8050/) and preview the site!
-7. If you have any feedback or run into issues, please feel free to contact me 🙂 📩  dennisgsmith12@gmail.com
 
 ## Credits
 The GeoJSON mask of Maryland counties is provided courtesy of @frankrowe (https://github.com/frankrowe/maryland-geojson/blob/master/maryland-counties.geojson).
