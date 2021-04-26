@@ -5,8 +5,8 @@ from sqlalchemy import create_engine
 import boto3
 from helpers import helpers
 
-DATABASE_URL = os.getenv("DATABASE_URL")
-engine = create_engine(DATABASE_URL)
+DATABASE_URI = os.getenv("DATABASE_URI")
+engine = create_engine(DATABASE_URI)
 
 DATA_URL = "https://opendata.arcgis.com/datasets/89c9c1236ca848188d93beb5928f4162_0.csv"
 AWS_S3_BUCKET = os.getenv('AWS_S3_BUCKET')

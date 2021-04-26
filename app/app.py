@@ -69,8 +69,8 @@ df = read_s3(vax_data_obj)
 
 # -----------------------------READ DATA FROM POSTGRES---------------------------
 
-# DATABASE_URL = os.environ["DATABASE_URL"]
-# engine = sqlalchemy.create_engine(DATABASE_URL)
+# DATABASE_URI = os.environ["DATABASE_URI"]
+# engine = sqlalchemy.create_engine(DATABASE_URI)
 
 # def read_db(engine):
     # df = pd.read_sql_table("vaccines", engine)

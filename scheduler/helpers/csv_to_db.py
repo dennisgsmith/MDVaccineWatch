@@ -4,9 +4,9 @@ from sqlalchemy import create_engine
 import helpers
 import pandas as pd
 
-DATABASE_URL = os.getenv("DATABASE_URL")
+DATABASE_URI = os.getenv("DATABASE_URI")
 # Create the database connection with SQL Alchemy for Pandas to read
-engine = create_engine(DATABASE_URL)
+engine = create_engine(DATABASE_URI)
 
 
 def main():

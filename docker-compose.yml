@@ -19,7 +19,7 @@ services:
     container_name: mdvaccinewatch_scheduler_container
     build: ./scheduler
     environment:
-      - DATABASE_URL
+      - DATABASE_URI
       - AWS_S3_BUCKET
       - AWS_DEFAULT_REGION
       - ACCESS_ID
@@ -34,7 +34,7 @@ services:
     environment:
       - PYTHONUNBUFFERED="stout"
       - MB_TOKEN
-      - DATABASE_URL
+      - DATABASE_URI
       - AWS_S3_BUCKET
       - AWS_DEFAULT_REGION
       - ACCESS_ID
