@@ -27,8 +27,7 @@ I configured the containers each with their own seperate Dockerfiles and require
 Okay, so things were looking good development-wise. I was thinking about deploying my application to share it with the world. Heroku is *free*, so I had decided to use their service to host my site. It should be as easy as pushing my containers up to cloud and running them, just like I had done locally, *right?* **Wrong!**
 After some research (and frustration), I realized:
 
-**In Heroku, filesystems are *ephemeral***
-Meaning that mounting volumes would not be possible.
+**In Heroku, filesystems are *ephemeral***: meaning that mounting volumes would not be possible.
 
 Since Heroku spins down your app after an hour of inactivity, the filesystems also disappear. Additionally, the scheduled loop would be forced to close and would not be able to call the data ingestion function because the app would not be running.
 
@@ -40,14 +39,18 @@ I redesigned the scheduler process to include a handful of functions that retrie
 
 The functions are then called in main.py, the entrypoint for the scheduler process.
 
-As I looked for an external tigger that I could schedule for my recurring job execution, I found Heroku Scheduler, a free add-on, but realized that it has its own limitations: You can only schedule task in the web process when using Docker containers. However, the Process Scheduler add-on allows for execution of any process--just what I needed. Again though, there was a caveat: the Process Scheduler is designed to trigger and run jobs that stay up until it forces them to shut back down. So, I designed main.py to run the etrypoint funtion once, and then sleep continuously until the add-on shuts it down. This spends more dino hours, but seeing as the job is only, once a day and only averages 0.4 dino-hours, I managed to keep things free.
+As I looked for an external tigger that I could schedule for my recurring job execution, I found Heroku Scheduler, a free add-on, but realized that it has its own limitations: You can only schedule task in the web process when using Docker containers. However, the Process Scheduler add-on allows for execution of any process, just what I needed!
+
+Again though, there was a caveat: the Process Scheduler is designed to trigger and run jobs that stay up until it forces them to shut back down. So, I designed main.py to run the etrypoint funtion once, and then sleep continuously until the add-on shuts it down. This spends more dino hours, but seeing as the job is only, once a day and only averages 0.4 dino-hours, I managed to keep things free.
 
 Along the way of implementing these changes, I decided to use heroku.yml to build my containers (as opposed to the docker-compose.yml I used for local development) to allow Heroku to build my images for me to offest some of the processing, and minimize container uploads. Along with other features, it has the advantage of being able to define add-ons on creation.
 
 I used the tool direnv, a useful shell tool for managing virtual environments and environment variable, to make a reproducable environmnet that I could easily replicate with Heroku and the Docker containers.
 
 # Furthermore
-The process of designing, implemeting, and deploying this app didn't go the smoothest--but I think that's exactly what I needed in order to get my feet wet. If I never tried to *just make it work* and (inevitably breaking things), I wouldn't have learned nearly as much as I did. Following tutorials is great way to get introduced to something, but it can be easy to get lost in the sauce and come out feeling short of direction. For a while, I felt like I was stuck in *tutorial hell* and would be discouraged when I didn't have much to show for all of the work that I put in. If youd like to fork this and make changes to it feel free to. Change it, break it, fix it, and ultimately learn from the process.
+No doubt, the implemetaion of this webapp is far from perfect. There are coutnless ways that I could refactor the codebase, optimize by redeisigning with a serverless arcitecture model using lambda funtions, etc., but if I didn't start by buildng something in the first place, I wouldn't even know what this is!
+
+The process of designing, implemeting, and deploying this app didn't go the smoothest-- and I think that's exactly what I needed in order to get my feet wet. If I never tried to *just make it work* and (inevitably breaking things), I wouldn't have learned nearly as much as I did. Following tutorials is great way to get introduced to something, but it can be easy to get lost in the sauce and come out feeling short of direction. For a while, I felt like I was stuck in *tutorial hell* and would be discouraged when I didn't have much to show for all of the work that I put in. If youd like to fork this and make changes to it feel free to. Change it, break it, fix it, and ultimately learn from the process.
 
 ## Credits
 The GeoJSON mask of Maryland counties is provided courtesy of @frankrowe (https://github.com/frankrowe/maryland-geojson/blob/master/maryland-counties.geojson).
