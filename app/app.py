@@ -12,6 +12,7 @@ import dash_html_components as html
 from dash.dependencies import Input, Output
 import plotly.express as px
 import boto3
+
 # import sqlalchemy
 
 # -----------------------------------------------------------------------------
@@ -51,19 +52,18 @@ ACCESS_KEY = os.getenv("ACCESS_KEY")
 
 # Load data from S3 bucket
 s3_resource = boto3.resource(
-    's3',
-    aws_access_key_id=ACCESS_ID,
-    aws_secret_access_key= ACCESS_KEY
+    "s3", aws_access_key_id=ACCESS_ID, aws_secret_access_key=ACCESS_KEY
 )
 
 # Get vaccine data written to S3 by scheduler job
 vax_data_obj = s3_resource.meta.client.get_object(
-    Bucket=AWS_S3_BUCKET,
-    Key='MD_Vax_Data.csv'
+    Bucket=AWS_S3_BUCKET, Key="MD_Vax_Data.csv"
 )
 
+
 def read_s3(vax_data_obj):
-    return pd.read_csv(io.BytesIO(vax_data_obj['Body'].read()))
+    return pd.read_csv(io.BytesIO(vax_data_obj["Body"].read()))
+
 
 df = read_s3(vax_data_obj)
 
@@ -73,8 +73,8 @@ df = read_s3(vax_data_obj)
 # engine = sqlalchemy.create_engine(DATABASE_URI)
 
 # def read_db(engine):
-    # df = pd.read_sql_table("vaccines", engine)
-    # df.drop_duplicates(inplace=True)
+# df = pd.read_sql_table("vaccines", engine)
+# df.drop_duplicates(inplace=True)
 
 # ---------------------------------CLEAN UP DATA---------------------------------
 

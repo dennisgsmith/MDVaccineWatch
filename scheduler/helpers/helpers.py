@@ -54,13 +54,14 @@ def update_db(db_engine):
     # Use datetime to get epoch of each days date for query
     # Data for the previous day is updlaoded daily
     yesterday = (dt.date.today() - dt.timedelta(days=1)).strftime("%d/%m/%Y")
+    today = dt.date.today().strftime("%d/%m/%Y")
 
     # Insert date range into query string
     query = (
         "https://services.arcgis.com/njFNhDsUCentVYJW/arcgis/rest/services/"
         "MD_COVID19_TotalVaccinationsCountyFirstandSecondSingleDose/FeatureServer/0/query?"
         f"where=VACCINATION_DATE%20%3E%3D%20TIMESTAMP%20%27{yesterday}%27%20"
-        f"AND%20VACCINATION_DATE%20%3C%3D%20TIMESTAMP%20%27{yesterday}%27"
+        f"AND%20VACCINATION_DATE%20%3C%3D%20TIMESTAMP%20%27{today}%27"
         "&outFields=VACCINATION_DATE,County,SecondDoseCumulative,SingleDoseCumulative,"
         "FirstDoseCumulative&outSR=4326&f=json"
     )
@@ -110,6 +111,6 @@ def update_s3(url, s3_resource, bucket_name):
 
     csv_buffer = io.StringIO()
     df.to_csv(csv_buffer)
-    s3_resource.Object(bucket_name, 'MD_Vax_Data.csv').put(Body=csv_buffer.getvalue())
+    s3_resource.Object(bucket_name, "MD_Vax_Data.csv").put(Body=csv_buffer.getvalue())
 
     return True

@@ -39,5 +39,6 @@ services:
       - AWS_DEFAULT_REGION
       - ACCESS_ID
       - ACCESS_KEY
+      # - PORT is defined in Dockerfile
     ports:
       - 8050:8050
