@@ -1,6 +1,4 @@
-import time
 import os
-import schedule
 from sqlalchemy import create_engine
 import boto3
 from helpers import helpers
@@ -26,7 +24,4 @@ def main():
 
 
 if __name__ == "__main__":
-    schedule.every().day.at("12:00").do(main)
-    while True:
-        schedule.run_pending()
-        time.sleep(1)
+    main()

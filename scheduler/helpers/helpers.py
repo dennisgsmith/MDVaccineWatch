@@ -73,6 +73,11 @@ def update_db(db_engine):
 
     df = pd.DataFrame.from_records(records)
 
+    if df.empty:
+        print("No new data from source!")
+        print("DATABASE IS UP TO DATE")
+        return False
+
     # Transform queried data to fit within postgres database
     df = clean_df(df)
     df["vaccination_date"] = pd.to_datetime(df["vaccination_date"], unit="ms")
@@ -81,7 +86,7 @@ def update_db(db_engine):
     # Append data to postgres database
     df.to_sql("vaccines", db_engine, if_exists="append")
     print(df)
-    print("SUCCESSFULLY UPDATED POSTGRES DB")
+    print("SUCCESSFULLY UPDATED DATABASE")
     return True
 
 
