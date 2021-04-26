@@ -1,4 +1,7 @@
 app/
-backend/
+scheduler/
 .vscode/
 .python-version
+.direnv
+.envrc
+.DS_Store
