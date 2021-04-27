@@ -10,7 +10,7 @@ In this article, I go over my process of creating a dashboard application from s
 [https://mdvaccinewatch.herokuapp.com](https://mdvaccinewatch.herokuapp.com)
 
 # Overview
-I got the idea for this project while following along with a [Real Python tutorial on Dash](https://realpython.com/python-dash/). After completing the tutorial and reading thorugh some of Dash and Plotly's documentation, I wanted to simply try mapping a vaccine data from a CSV file ([maryland.gov](maryland.gov)) to county positions on a map. I chose my home state of maryland becuase it is:
+I got the idea for this project while following along with a [Real Python tutorial on Dash](https://realpython.com/python-dash/). After completing the tutorial and reading thorugh some of Dash and Plotly's documentation, I wanted to simply try mapping a vaccine data from a CSV file to county positions on a mapbox plot. I chose my home state of maryland becuase it is:
 
 - Relevent
 - The data is easily accessable
@@ -18,24 +18,24 @@ I got the idea for this project while following along with a [Real Python tutori
 
 # Getting things working locally
 
-### Dash
-After reading through some of the [Plotly/Dash documentation](https://dash.plotly.com), I created html with the Dash API using their html components library and mapped my data to each county location using GEOJSON data. I then created the interfacing tools used to manipulate and filter the data using callback functions.
+### Creating the Dash App
+I had a basic understanding of of Dash from the tutorial, but there was still a lot of ground to cover. I needed to figure out out mapping GIS data, writing my own callback functions, structuring the layout with the Dash html components, etc. After reading through some of the [Plotly/Dash documentation](https://dash.plotly.com), and making some rough prototypes, I created the final layout and mapped my vaccine data different county locations using a GeoJSON file of Maryland's counties. This allowed me to create the geometric objects needed for a [choroploth map](https://en.wikipedia.org/wiki/Choropleth_map). I then created the interfacing tools used to manipulate and filter the data using some Dash core components and callback functions. This process took some trial and error, but overall was relatively straightforward once I had things running.
 
-### Data pipeline
-At this point, I was just reading the data from a static CSV file. The ultimate goal would be to update the data automatically every day. I did this by creating a script that attempts to retrieve the statically-hosted csv file and download it to a local path. Ideally, I would establish a connection to the database that hosts the information and send SQL queries to regularly update it, but that service (ArcGIS) is proprietary, so I'm limited to downloading the entire CSV.
+### Building a data pipeline
+At this point, I was just reading the data from a static CSV file. The ultimate goal would be to update the data automatically every day. I did this by creating a script that attempts to retrieve the statically-hosted csv file and download it to a local path. Ideally, I would establish a connection to the database that hosts the information and send SQL queries to regularly update it, but that service ([ArcGIS](https://www.arcgis.com/index.html)) is proprietary, so I'm limited to downloading the entire CSV.
 
-Once I created a seperate script for the job, I found a sceduler to automate the job for me. I picked the Python module [schedule](https://schedule.readthedocs.io/en/stable/) by Dan Bader to run the update data job because it's very simple to use and does't require any external dependencies. There are microservices that could do this, but I wanted to stay PaaS-agnostic at his point because I was still considering the pros and cons of each.
+Once I created a seperate script for the job, I found a sceduler to automate the job for me. I picked the Python module [schedule](https://schedule.readthedocs.io/en/stable/) by Dan Bader to run the update data job because it's very simple to use and does't require any external dependencies.
 
-### Docker
-Once the sceduler was working, I decided it was a good idea to containerize everything with Docker to make it (hopefully) easier to deply. Following the rule of "containers should do one thing", I created two pyhton:3.8 containers:
+### Container-izing wiht Docker
+Once the sceduler was working, I decided it was a good idea to containerize everything with Docker to make it (hopefully) easier to deply. Following the rule of "containers should do one thing", I created two Docker containers from pyhton 3.8 base images:
 
 1. The Dash app itself
 2. The recurring data ingestion job
 
-I configured the containers each with their own seperate Dockerfiles and requirements.txt files. The data from the scheduler container is persisted in a volume that it shares over a network connection with the app container. Docker Compose orchestrates the execution of the Dockerfiles, managing the creation of the containers and making sure that the images are built in the necessary order.
+I configured the containers each with their own seperate Dockerfiles and requirements.txt files. The data from the scheduler container persisted in a volume that it shared over a network connection with the app container. The docker-compose.yml orchestrates the execution of the Dockerfiles during development, managing the creation of the containers and making sure that the images are built in the necessary order.
 
-### Deployment with Heroku
-Okay, so things were looking good development-wise. I was thinking about deploying my application to share it with the world. Heroku is *free*, so I had decided to use their service to host my site. It should be as easy as pushing my containers up to cloud and running them, just like I had done locally, *right?* **Wrong!**
+# Deploying the app with Heroku
+Okay, so things were looking good. I was thinking about deploying my application to share with the world. Heroku is *free*, so I had decided to use their service to host my site. It should be as easy as pushing my containers up to cloud and running them, just like I had done locally, *right?*  **Wrong!**
 After some research (and frustration), I realized:
 
 **In Heroku, filesystems are *ephemeral:*** meaning that mounting volumes would not be possible.
@@ -72,8 +72,10 @@ The process of designing, implemeting, and deploying this app didn't go the smoo
 I encourage anyone who feels like that to just start working on something. Pick anything! *It's okay to re-invent the wheel if you learn something from it.* If you'd like to fork [this repository on Github](https://github.com/dennisgsmith/MDVaccineWatch) and make changes to it feel free to! Change it, break it, fix it, and ultimately learn from the process.
 
 ## Credits
-The GeoJSON mask of Maryland counties is provided courtesy of @frankrowe (https://github.com/frankrowe/maryland-geojson/blob/master/maryland-counties.geojson).
+The GeoJSON mask of Maryland counties is provided courtesy of @frankrowe [on Github](https://github.com/frankrowe/maryland-geojson/blob/master/maryland-counties.geojson).
 
-Vaccination data is provided by Maryland State Gov. (https://data.imap.maryland.gov/)
+Vaccination data is provided by [maryland.gov](https://data.imap.maryland.gov/)
 
-Total population by county is provided by the U.S. Census Beurau (https://www.census.gov/).
+Total population by county is provided by the [U.S. Census Beurau](https://www.census.gov/).
+
+A special thanks to Alan Scherger and Remco Boerma, who have given me much needed feedback thorughout my processes of development and deployment.
