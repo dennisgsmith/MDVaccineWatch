@@ -17,7 +17,7 @@ After reading through some of the [Plotly/Dash documentation](https://dash.plotl
 
 At this point, I was just reading the data from a static CSV file. The ultimate goal would be to update the data automatically every day. I did this by creating a script that attempts to retrieve the statically-hosted csv file and download it to a local path. Ideally, I would establish a connection to the database that hosts the information and send SQL queries to regularly update it, but that service (ArcGIS) is proprietary, so I'm limited to downloading the entire CSV.
 
-Once I created a seperate script for the job, I found a sceduler to automate the job for me. I picked the Python module [scedule](https://schedule.readthedocs.io/en/stable/) by Dan Bader to run the update data job because it's very simple to use and does't require any external dependencies. There are microservices that could do this, but I wanted to stay PaaS-agnostic at his point because I was still considering the pros and cons of each.
+Once I created a seperate script for the job, I found a sceduler to automate the job for me. I picked the Python module [schedule](https://schedule.readthedocs.io/en/stable/) by Dan Bader to run the update data job because it's very simple to use and does't require any external dependencies. There are microservices that could do this, but I wanted to stay PaaS-agnostic at his point because I was still considering the pros and cons of each.
 
 Once the sceduler was working, I decided it was a good idea to containerize everything with Docker to make it (hopefully) easier to deply. Following the rule of "containers should do one thing", I created two pyhton:3.8 containers:
 
@@ -41,7 +41,8 @@ Instead of using volumes to persist data, I chose to store my dynamically update
 I redesigned the scheduler process to include a handful of functions that retrieve the data via HTTP requests and JSON queries, storing the data collected in an AWS S3 bucket and PostgreSQL Database. Once the CSV data is transformed and uploaded to the S3 bucket, it can be retrieved to use with the Dash app for OLTP (*Online Transactional Processing*). The data stored in the PostgreSQL Database can be used for archival and anaylsis, OLAP (*Online Analytical Processing*).
 
 ![Alt](images/MDVaccineWatch_prod1-5.png)
-*An  entity relation diagram to help visualize the architecture*
+
+*Creating an entity relation diagram to helped to visualize the architecture*
 
 The functions are then called in main.py, the entrypoint for the scheduler process.
 
