@@ -2,6 +2,9 @@ Thorughout the COVID-19 pandemic, data has played a integral role in keeping peo
 
 In this article, I go over my process of creating a dashboard application from scratch using Dash and Docker, from the simplest to most challenging aspects of the project.
 
+![Alt](images/mdvaxwatch_screencap.png)
+https://mdvaccinewatch.herokuapp.com
+
 # Background & Overview
 I got the idea for this project while following along with a [Real Python tutorial on Dash](https://realpython.com/python-dash/). After completing the tutorial and reading thorugh some of Dash and Plotly's documentation, I wanted to simply try mapping a vaccine data from a CSV file (maryland.gov) to county positions on a map. I chose my home state of maryland becuase it is:
 
@@ -36,6 +39,9 @@ I needed to rethink the architecture of my app. Not only was the current local i
 Instead of using volumes to persist data, I chose to store my dynamically updated data in the cloud. The data would also be uploaded via external trigger, rather than an endless while loop.
 
 I redesigned the scheduler process to include a handful of functions that retrieve the data via HTTP requests and JSON queries, storing the data collected in an AWS S3 bucket and PostgreSQL Database. Once the CSV data is transformed and uploaded to the S3 bucket, it can be retrieved to use with the Dash app for OLTP (*Online Transactional Processing*). The data stored in the PostgreSQL Database can be used for archival and anaylsis, OLAP (*Online Analytical Processing*).
+
+![Alt](images/MD_VaccineWatch_prod1-5.png)
+*An  entity relation diagram to help visualize the architecture*
 
 The functions are then called in main.py, the entrypoint for the scheduler process.
 
