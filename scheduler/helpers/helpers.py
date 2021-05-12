@@ -2,17 +2,17 @@ import io
 import datetime as dt
 from typing import Union
 
-import boto3
 import sqlalchemy
 import requests
 import pandas as pd
 from urllib.error import HTTPError
 
 
+
 class WriteData:
     def __init__(
         self,
-        s3_resource: Union[boto3.resources.factory.s3.ServiceResource, None] = None,
+        s3_resource=None,  # boto3 type hinting not actively maintained
         db_conn: Union[sqlalchemy.engine.base.Engine, None] = None,
     ):
         self.s3_resource = s3_resource
