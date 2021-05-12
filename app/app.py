@@ -41,28 +41,9 @@ cb = CallbackUtils()
 
 s3 = LoadS3()
 
-df = s3.read_s3_df()
+df = s3.etl_pipeline()  # Get df from S3 and make transformations on load
 
-df.rename(
-    columns={
-        "vaccination_date": "date",
-        "county": "County",
-        "firstdosecumulative": "First Dose",
-        "seconddosecumulative": "Second Dose",
-        "singledosecumulative": "Single Dose",
-        "fullyvaccinated": "Fully Vaccinated",
-        "atleastonevaccine": "At Least One Vaccine",
-    },
-    inplace=True,
-)
-
-# Convert to datetime
-df["date"] = pd.to_datetime(df["date"], format="%Y-%m-%d")
-
-# Sort by date ad create numeric representation for each unique date for numeric Slider input
-df.sort_values(by="date", inplace=True)
-
-numdate = [i for i in range(len(df["date"].unique()))]
+numdate = s3.get_numdate(df)  # Get index for slider component
 
 # -----------------------------------------------------------------------------
 

@@ -35,6 +35,35 @@ class LoadS3:
         """Read data from S3 to Pandas DataFrame"""
         return pd.read_csv(io.BytesIO(self.vax_data_obj["Body"].read()))
 
+    def prep_df(self, df: pd.DataFrame) -> pd.DataFrame:
+        """Transform Pandas DataFrame after csv read"""
+        df.rename(
+            columns={
+                "vaccination_date": "date",
+                "county": "County",
+                "firstdosecumulative": "First Dose",
+                "seconddosecumulative": "Second Dose",
+                "singledosecumulative": "Single Dose",
+                "fullyvaccinated": "Fully Vaccinated",
+                "atleastonevaccine": "At Least One Vaccine",
+            },
+            inplace=True,
+        )
+
+        # Convert to datetime
+        df["date"] = pd.to_datetime(df["date"], format="%Y-%m-%d")
+
+        # Sort by date ad create numeric representation for each unique date for numeric Slider input
+        df.sort_values(by="date", inplace=True)
+        return df
+
+    def etl_pipeline(self) -> pd.DataFrame:
+        df = self.read_s3_df()
+        return self.prep_df(df)
+
+    def get_numdate(self, df: pd.DataFrame) -> int:
+        return [i for i in range(len(df["date"].unique()))]
+
 
 class LoadDb:
     def __init__(self):
