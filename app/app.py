@@ -5,15 +5,14 @@ from pathlib import Path
 
 import pandas as pd
 import dash
-from dash_table import DataTable, FormatTemplate
-from dash_table.Format import Format
+from dash_table import DataTable
 import dash_core_components as dcc
 import dash_html_components as html
 from dash.dependencies import Input, Output
 import plotly.express as px
-import boto3
 
-# import sqlalchemy
+from data_utils import CallbackUtils
+from data_utils import LoadS3
 
 # -----------------------------------------------------------------------------
 
@@ -36,47 +35,13 @@ GEOJSON_PATH = FILES_DIR / "maryland-counties.geojson"
 with open(GEOJSON_PATH.resolve()) as f:
     geojson_counties = json.load(f)
 
-# Total population by county
-POP_EST_PATH = FILES_DIR / "Population_Estimates_by_County.csv"
-
-# Build dataframe of all county population to get percentages
-# Source: https://www.census.gov/
-pop_est_by_county = pd.read_csv(POP_EST_PATH.resolve(), dtype={"Population": int})
-
-# -------------------------------READ DATA FROM S3-------------------------------
-
-AWS_S3_BUCKET = os.getenv("AWS_S3_BUCKET")
-AWS_DEFAULT_REGION = os.getenv("AWS_DEFAULT_REGION")
-ACCESS_ID = os.getenv("ACCESS_ID")
-ACCESS_KEY = os.getenv("ACCESS_KEY")
-
-# Load data from S3 bucket
-s3_resource = boto3.resource(
-    "s3", aws_access_key_id=ACCESS_ID, aws_secret_access_key=ACCESS_KEY
-)
-
-# Get vaccine data written to S3 by scheduler job
-vax_data_obj = s3_resource.meta.client.get_object(
-    Bucket=AWS_S3_BUCKET, Key="MD_Vax_Data.csv"
-)
-
-
-def read_s3(vax_data_obj):
-    return pd.read_csv(io.BytesIO(vax_data_obj["Body"].read()))
-
-
-df = read_s3(vax_data_obj)
-
-# -----------------------------READ DATA FROM POSTGRES---------------------------
-
-# DATABASE_URI = os.environ["DATABASE_URI"]
-# engine = sqlalchemy.create_engine(DATABASE_URI)
-
-# def read_db(engine):
-# df = pd.read_sql_table("vaccines", engine)
-# df.drop_duplicates(inplace=True)
-
 # ---------------------------------CLEAN UP DATA---------------------------------
+
+cb = CallbackUtils()
+
+s3 = LoadS3()
+
+df = s3.read_s3_df()
 
 df.rename(
     columns={
@@ -97,17 +62,7 @@ df["date"] = pd.to_datetime(df["date"], format="%Y-%m-%d")
 # Sort by date ad create numeric representation for each unique date for numeric Slider input
 df.sort_values(by="date", inplace=True)
 
-numdate = [x for x in range(len(df["date"].unique()))]
-
-# Define the columns to subset globally to make it easier to reference them
-col_list = [
-    "County",
-    "First Dose",
-    "Second Dose",
-    "Single Dose",
-    "At Least One Vaccine",
-    "Fully Vaccinated",
-]
+numdate = [i for i in range(len(df["date"].unique()))]
 
 # -----------------------------------------------------------------------------
 
@@ -320,9 +275,9 @@ def display_choropleth(
     print(selected_dose, type(selected_dose))
     print(selected_button, type(selected_button))
 
-    slider_date = get_slider_date(df, selected_date)
+    slider_date = cb.get_slider_date(df, selected_date)
 
-    dff1 = filter_by_date(df, slider_date)
+    dff1 = cb.filter_by_date(df, slider_date)
 
     p = False
     tick_format = ","
@@ -331,7 +286,7 @@ def display_choropleth(
         p = True
         tick_format = "%"
 
-    dff1 = get_county_stats(dff1, percent=p)
+    dff1 = cb.get_county_stats(dff=dff1, percent=p)
 
     # Get max of aggregates returned by get_county_stats
     mx = max(dff1[selected_dose])
@@ -391,9 +346,9 @@ def display_stats(selected_date_index, clickData, selected_button):
     print(clickData)
     print(type(clickData))
 
-    slider_date = get_slider_date(df, selected_date_index)
+    slider_date = cb.get_slider_date(df, selected_date_index)
     dt_slider_date = pd.to_datetime(str(slider_date))
-    dff2 = filter_by_date(df, slider_date)
+    dff2 = cb.filter_by_date(df, slider_date)
 
     output_date_location = f"Date selected: **{dt_slider_date.strftime('%B %-d, %Y')}**"
 
@@ -402,9 +357,9 @@ def display_stats(selected_date_index, clickData, selected_button):
         p = True
 
     # Get total state sums before filtering by County
-    atleast1_sum_s, fully_sum_s = get_state_stats(dff2, percent=p)
+    atleast1_sum_s, fully_sum_s = cb.get_state_stats(dff=dff2, percent=p)
 
-    pop_est_state = int(pop_est_by_county.Population.sum())
+    pop_est_state = cb.get_county_pop('State')
 
     state_stats = "  |  ".join(
         [
@@ -429,110 +384,25 @@ def display_stats(selected_date_index, clickData, selected_button):
 
     # Get selected county
     # Make sure to return 4 items in the callback!!!!
-    county_name = clickData.get("points")[0].get("location")
+    county_click = clickData.get("points")[0].get("location")
 
-    output_date_location += f"  |  County Selected: **{county_name}**"
-    pop_est = int(
-        pop_est_by_county.loc[
-            pop_est_by_county["County"] == county_name, "Population"
-        ].values
-    )
+    output_date_location += f"  |  County Selected: **{county_click}**"
+    pop_est = cb.get_county_pop(county_click)
     output_date_location += f"  |  County Estimated Population: **{pop_est:{','}}**"
 
-    dff2 = get_county_stats(dff2, percent=p)
+    dff2 = cb.get_county_stats(dff=dff2, percent=p)
 
     # Filter by county
-    stats_df = filter_by_county(dff2, county_name)
-    stats_df.fillna(0)
-    stats_df.drop(columns="County", inplace=True)
+    stats_df = cb.filter_by_county(dff2, county_click)
 
     table_cols = [
-        {"id": col, "name": col, "type": "numeric", "format": format_table(p)}
-        for col in stats_df.columns
-    ]
+            {"id": col, "name": col, "type": "numeric", "format": cb.format_table(percent=p)}
+            for col in stats_df.columns
+        ]
+
     table_data = stats_df.to_dict("records")
 
     return state_stats, output_date_location, table_cols, table_data
-
-
-# -----------------------------------------------------------------------------
-# Helper Functions
-
-
-def get_slider_date(df, selected_date_index):
-    """Return timestamp based on numerical index provided by slider"""
-    return df["date"].unique()[selected_date_index]
-
-
-def filter_by_date(df, slider_date):
-    """
-    Filter the dataframe based on the date entered
-    Return filtered dataframe
-    """
-    dff = df.copy(deep=True)
-    return dff[dff["date"] == slider_date]
-
-
-def filter_by_county(df, county_name):
-    """Use Pandas boolean indexing to return a county-filtered dataframe"""
-    return df.loc[df["County"] == county_name, col_list]
-
-
-def get_county_stats(dff, percent=False):
-    """
-    Input date filtered dataframe, percent Bool (optional)
-    Return a DataFrame with 3 cols:
-    "First Dose", "Second Dose", & "Single Dose"
-    Values (percent=False(default)):absolute people vacciated in county_name OR
-    Values (percent=True): relative people vaccinated in county_name
-    """
-    # Get rid of index
-    dff.reset_index(drop=True, inplace=True)
-
-    if percent == True:
-        # Copy estimated pop by county
-        county_pops = pop_est_by_county.copy(deep=True)
-
-        # Filter for selected location
-        merged_df = pd.merge(county_pops, dff, how="left", on="County")
-
-        # Create list of columns to calculate percentage on
-        county_stats_col_list = [col for col in col_list if col != "County"]
-
-        # Get percent of total population vaccinated for numeric columns
-        merged_df[county_stats_col_list] = merged_df[county_stats_col_list].div(
-            merged_df.Population, axis=0
-        )
-
-        # Return the percent of the population vaccinated for
-        return merged_df
-
-    # Otherwise, just use absolute numbers
-    return dff
-
-
-def get_state_stats(dff, percent=False):
-    """Compute date-filtered dataframe totals"""
-    # dataframe filterd to single day
-    dff.copy()  # Shallow copy
-
-    atleast1_sum_state = dff["First Dose"].sum()
-    fully_sum_state = dff["Second Dose"].sum() + dff["Single Dose"].sum()
-
-    if percent == True:
-        state_pop = pop_est_by_county["Population"].sum()
-        atleast1_sum_state /= state_pop
-        fully_sum_state /= state_pop
-
-    return atleast1_sum_state, fully_sum_state
-
-
-def format_table(percent=False):
-    """Return dash_table formatting string based on boolean arg"""
-    if not percent:
-        return Format().group(True)
-    else:
-        return FormatTemplate.percentage(2)
 
 
 if __name__ == "__main__":
