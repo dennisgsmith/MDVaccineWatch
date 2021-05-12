@@ -34,6 +34,7 @@ class LoadS3:
 
 
     def read_s3_df(self) -> pd.DataFrame:
+        """Read data from S3 to Pandas DataFrame"""
         return pd.read_csv(io.BytesIO(self.vax_data_obj["Body"].read()))
     
 
@@ -43,6 +44,7 @@ class LoadDb:
 
 
     def read_db_df(self) -> pd.DataFrame:
+        """Read data from Postgres DB to Pandas DataFrame"""
         df = pd.read_sql_table("vaccines", self.engine)
         df.drop_duplicates(inplace=True)
         return df
@@ -67,10 +69,7 @@ class CallbackUtils:
 
 
     def filter_by_date(self, df: pd.DataFrame, slider_date: np.datetime64) -> pd.DataFrame:
-        """
-        Filter the dataframe based on the date entered
-        Return filtered dataframe
-        """
+        """Filter the dataframe based on the date entered"""
         dff = df.copy(deep=True)
         return dff[dff["date"] == slider_date]
 
@@ -85,11 +84,9 @@ class CallbackUtils:
 
     def get_county_stats(self, dff: pd.DataFrame, percent: bool = False) -> pd.DataFrame:
         """
-        Input date filtered dataframe, percent Bool (optional)
-        Return a DataFrame with 3 cols:
+        Create a DataFrame from the input with the following values:
         "First Dose", "Second Dose", & "Single Dose"
-        Values (percent=False(default)):absolute people vacciated in county_name OR
-        Values (percent=True): relative people vaccinated in county_name
+        Normalize data values if param percent == True
         """
         # Get rid of index
         dff.reset_index(drop=True, inplace=True)
@@ -132,18 +129,18 @@ class CallbackUtils:
         return atleast1_sum_state, fully_sum_state
 
 
-    def format_table(self, percent: bool = False):
-        """Return dash_table formatting string based on boolean arg"""
-        if not percent:
-            return Format().group(True)
-        else:
-            return FormatTemplate.percentage(2)
-
-    
-    def get_county_pop(self, county_name: str):
+    def get_county_pop(self, county_name: str) -> int:
+        """Match df.County on county name input str"""
         return int(
             self.census_data.loc[
                 self.census_data["County"] == county_name, "Population"
             ].values
         )
 
+
+    def format_table(self, percent: bool = False):
+        """Return dash_table formatting string based on boolean arg"""
+        if not percent:
+            return Format().group(True)
+        else:
+            return FormatTemplate.percentage(2)
