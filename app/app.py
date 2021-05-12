@@ -359,7 +359,7 @@ def display_stats(selected_date_index, clickData, selected_button):
     # Get total state sums before filtering by County
     atleast1_sum_s, fully_sum_s = cb.get_state_stats(dff=dff2, percent=p)
 
-    pop_est_state = cb.get_county_pop('State')
+    pop_est_state = cb.get_county_pop("State")
 
     state_stats = "  |  ".join(
         [
@@ -396,9 +396,14 @@ def display_stats(selected_date_index, clickData, selected_button):
     stats_df = cb.filter_by_county(dff2, county_click)
 
     table_cols = [
-            {"id": col, "name": col, "type": "numeric", "format": cb.format_table(percent=p)}
-            for col in stats_df.columns
-        ]
+        {
+            "id": col,
+            "name": col,
+            "type": "numeric",
+            "format": cb.format_table(percent=p),
+        }
+        for col in stats_df.columns
+    ]
 
     table_data = stats_df.to_dict("records")
 

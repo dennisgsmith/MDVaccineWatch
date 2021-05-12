@@ -1,4 +1,3 @@
-
 import os
 import io
 from pathlib import Path
@@ -32,16 +31,14 @@ class LoadS3:
             Bucket=AWS_S3_BUCKET, Key="MD_Vax_Data.csv"
         )
 
-
     def read_s3_df(self) -> pd.DataFrame:
         """Read data from S3 to Pandas DataFrame"""
         return pd.read_csv(io.BytesIO(self.vax_data_obj["Body"].read()))
-    
+
 
 class LoadDb:
     def __init__(self):
         self.engine = sqlalchemy.create_engine(DATABASE_URI)
-
 
     def read_db_df(self) -> pd.DataFrame:
         """Read data from Postgres DB to Pandas DataFrame"""
@@ -52,7 +49,9 @@ class LoadDb:
 
 class CallbackUtils:
     def __init__(self):
-        self.census_data = pd.read_csv(POP_EST_PATH.resolve(), dtype={"Population": int})
+        self.census_data = pd.read_csv(
+            POP_EST_PATH.resolve(), dtype={"Population": int}
+        )
         self.features = [
             "County",
             "First Dose",
@@ -62,17 +61,18 @@ class CallbackUtils:
             "Fully Vaccinated",
         ]
 
-
-    def get_slider_date(self, df: pd.DataFrame, selected_date_index: int) -> np.datetime64:
+    def get_slider_date(
+        self, df: pd.DataFrame, selected_date_index: int
+    ) -> np.datetime64:
         """Return timestamp based on numerical index provided by slider"""
         return df["date"].unique()[selected_date_index]
 
-
-    def filter_by_date(self, df: pd.DataFrame, slider_date: np.datetime64) -> pd.DataFrame:
+    def filter_by_date(
+        self, df: pd.DataFrame, slider_date: np.datetime64
+    ) -> pd.DataFrame:
         """Filter the dataframe based on the date entered"""
         dff = df.copy(deep=True)
         return dff[dff["date"] == slider_date]
-
 
     def filter_by_county(self, df: pd.DataFrame, county_name: str) -> pd.DataFrame:
         """Use Pandas boolean indexing to return a county-filtered dataframe"""
@@ -81,8 +81,9 @@ class CallbackUtils:
         stats_df.drop(columns="County", inplace=True)
         return stats_df
 
-
-    def get_county_stats(self, dff: pd.DataFrame, percent: bool = False) -> pd.DataFrame:
+    def get_county_stats(
+        self, dff: pd.DataFrame, percent: bool = False
+    ) -> pd.DataFrame:
         """
         Create a DataFrame from the input with the following values:
         "First Dose", "Second Dose", & "Single Dose"
@@ -112,7 +113,6 @@ class CallbackUtils:
         # Otherwise, just use absolute numbers
         return dff
 
-
     def get_state_stats(self, dff, percent=False) -> Tuple[np.int64, np.int64]:
         """Compute date-filtered dataframe totals"""
         # dataframe filterd to single day
@@ -128,7 +128,6 @@ class CallbackUtils:
 
         return atleast1_sum_state, fully_sum_state
 
-
     def get_county_pop(self, county_name: str) -> int:
         """Match df.County on county name input str"""
         return int(
@@ -136,7 +135,6 @@ class CallbackUtils:
                 self.census_data["County"] == county_name, "Population"
             ].values
         )
-
 
     def format_table(self, percent: bool = False):
         """Return dash_table formatting string based on boolean arg"""
