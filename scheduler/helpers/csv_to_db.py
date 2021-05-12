@@ -1,12 +1,10 @@
 import os
+from helpers import WriteData
 from sys import argv
 from sqlalchemy import create_engine
-import helpers
 import pandas as pd
 
 DATABASE_URI = os.getenv("DATABASE_URI")
-# Create the database connection with SQL Alchemy for Pandas to read
-engine = create_engine(DATABASE_URI)
 
 
 def main():
@@ -17,7 +15,7 @@ def main():
     if len(argv) != 2:
         print(len(argv))
         print("USAGE: python csv_to_db.py path/to/file.csv")
-        return 1  # TODO Error
+        return  # TODO Error
 
     csv_file = argv[1]
 
@@ -30,14 +28,22 @@ def main():
     except:
         print("ERROR helpers.clean_csv: Pandas unable to read .csv")
         return
+    else:
+        wd = WriteData(db_conn=DATABASE_URI)
+        df = wd.clean_df(df)  # returns Pandas df
 
-    df = helpers.clean_df(df)  # returns Pandas df
+        # datetime data cannot be localized, must be timezone unaware
+        df["vaccination_date"] = pd.to_datetime(df["vaccination_date"])
+        df["vaccination_date"] = df["vaccination_date"].dt.tz_localize(None)
 
-    # datetime data cannot be localized, must be timezone unaware
-    df["vaccination_date"] = pd.to_datetime(df["vaccination_date"])
-    df["vaccination_date"] = df["vaccination_date"].dt.tz_localize(None)
-
-    df.to_sql("vaccines", engine)
+    try:
+        # Create the database connection with SQL Alchemy for Pandas to read
+        engine = create_engine(DATABASE_URI)
+    except:
+        print("DB CONNECTION FAILED")
+        return  # TODO Error
+    else:
+        wd.update_postgres_db(from_csv=True)
 
 
 if __name__ == "__main__":
