@@ -24,25 +24,26 @@ def main():
         return  # TODO ERROR
 
     try:
+        # Create the database connection with SQL Alchemy for Pandas to read
+        engine = create_engine(DATABASE_URI)
+    except:
+        print("DB CONNECTION FAILED")
+        return  # TODO Error
+
+    try:
         df = pd.read_csv(csv_file)
     except:
         print("ERROR helpers.clean_csv: Pandas unable to read .csv")
         return
     else:
-        wd = WriteData(db_conn=DATABASE_URI)
+        wd = WriteData(db_conn=engine)
+
         df = wd.clean_df(df)  # returns Pandas df
 
         # datetime data cannot be localized, must be timezone unaware
         df["vaccination_date"] = pd.to_datetime(df["vaccination_date"])
         df["vaccination_date"] = df["vaccination_date"].dt.tz_localize(None)
 
-    try:
-        # Create the database connection with SQL Alchemy for Pandas to read
-        engine = create_engine(DATABASE_URI)
-    except:
-        print("DB CONNECTION FAILED")
-        return  # TODO Error
-    else:
         wd.update_postgres_db(from_csv=True)
 
 
