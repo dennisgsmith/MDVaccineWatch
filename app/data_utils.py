@@ -129,10 +129,10 @@ class CallbackUtils:
             merged_df = pd.merge(county_pops, dff, how="left", on="County")
 
             # Create list of columns to calculate percentage on
-            county_stats_col_list = [col for col in self.col_list if col != "County"]
+            county_stats_features = [col for col in self.features if col != "County"]
 
             # Get percent of total population vaccinated for numeric columns
-            merged_df[county_stats_col_list] = merged_df[county_stats_col_list].div(
+            merged_df[county_stats_features] = merged_df[county_stats_features].div(
                 merged_df.Population, axis=0
             )
 

@@ -1,15 +1,17 @@
 import os
-import io
+import time
 import json
 from pathlib import Path
 
 import pandas as pd
+import plotly.express as px
 import dash
 from dash_table import DataTable
 import dash_core_components as dcc
 import dash_html_components as html
 from dash.dependencies import Input, Output
-import plotly.express as px
+
+from dash_extensions.enrich import ServersideOutput, Trigger, FileSystemStore
 
 from data_utils import CallbackUtils
 from data_utils import LoadS3
@@ -35,15 +37,9 @@ GEOJSON_PATH = FILES_DIR / "maryland-counties.geojson"
 with open(GEOJSON_PATH.resolve()) as f:
     geojson_counties = json.load(f)
 
-# ---------------------------------CLEAN UP DATA---------------------------------
-
 cb = CallbackUtils()
-
 s3 = LoadS3()
-
-df = s3.etl_pipeline()  # Get df from S3 and make transformations on load
-
-numdate = s3.get_numdate(df)  # Get index for slider component
+df = s3.etl_pipeline()
 
 # -----------------------------------------------------------------------------
 
@@ -60,7 +56,8 @@ server = app.server
 PORT = int(os.getenv("PORT"))
 app.title = "#MDVaccineWatch"
 
-app.layout = html.Div(
+def serve_layout():
+    return html.Div(
     [
         html.Div(
             [
@@ -182,19 +179,7 @@ app.layout = html.Div(
                             [
                                 html.P("Adjust the timeline slider:"),
                                 dcc.Slider(
-                                    id="selected-date-index",
-                                    min=numdate[0],
-                                    max=numdate[-1],
-                                    value=numdate[-1],
-                                    marks={
-                                        "label": "date",
-                                        numdate[0]: min(df["date"]).strftime(
-                                            "%m/%d/%Y"
-                                        ),
-                                        numdate[-1]: max(df["date"]).strftime(
-                                            "%m/%d/%Y"
-                                        ),
-                                    },
+                                    id="selected-date-index"
                                 ),
                             ],
                             className="slider-container",
@@ -231,12 +216,41 @@ app.layout = html.Div(
             ],
             className="wrapper",
         ),
+        html.Button(id='btn', style={'display': 'none'})
     ],
 )
+
+app.layout = serve_layout
 
 # -----------------------------------------------------------------------------
 # Connect Plotly graphs with Dash components
 # Callback functions
+
+
+@app.callback(
+    [
+        Output('selected-date-index', 'min'),
+        Output('selected-date-index', 'max'),
+        Output('selected-date-index', 'value'),
+        Output('selected-date-index', 'marks'),
+    ],
+    Trigger('btn', 'n_clicks')
+)
+def render_slider(_):
+    numdate = s3.get_numdate(df)
+    slider_min=numdate[0]
+    slider_max=numdate[-1]
+    slider_value=numdate[-1]
+    slider_marks={
+        "label": "date",
+        numdate[0]: min(df["date"]).strftime(
+            "%m/%d/%Y"
+        ),
+        numdate[-1]: max(df["date"]).strftime(
+            "%m/%d/%Y"
+        )
+    }
+    return slider_min, slider_max, slider_value, slider_marks
 
 
 @app.callback(
