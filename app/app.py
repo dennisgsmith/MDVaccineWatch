@@ -1,5 +1,4 @@
 import os
-import time
 import json
 from pathlib import Path
 
@@ -10,13 +9,11 @@ from dash_table import DataTable
 import dash_core_components as dcc
 import dash_html_components as html
 from dash.dependencies import Input, Output
-
-from dash_extensions.enrich import ServersideOutput, Trigger, FileSystemStore
+from dash_extensions.enrich import Trigger
 
 from data_utils import CallbackUtils
 from data_utils import LoadS3
 
-# -----------------------------------------------------------------------------
 
 FILES_DIR = Path(__file__).parent / "files"
 
@@ -344,6 +341,8 @@ def display_stats(selected_date_index, clickData, selected_button):
     slider_date = cb.get_slider_date(df, selected_date_index)
     dt_slider_date = pd.to_datetime(str(slider_date))
     dff2 = cb.filter_by_date(df, slider_date)
+
+    print(dff2.columns)
 
     output_date_location = f"Date selected: **{dt_slider_date.strftime('%B %-d, %Y')}**"
 

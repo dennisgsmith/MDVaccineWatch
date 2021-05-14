@@ -96,6 +96,14 @@ class CallbackUtils:
         """Return timestamp based on numerical index provided by slider"""
         return df["date"].unique()[selected_date_index]
 
+    def get_county_pop(self, county_name: str) -> int:
+        """Match df.County on county name input str"""
+        return int(
+            self.census_data.loc[
+                self.census_data["County"] == county_name, "Population"
+            ].values
+        )
+
     def filter_by_date(
         self, df: pd.DataFrame, slider_date: np.datetime64
     ) -> pd.DataFrame:
@@ -142,28 +150,22 @@ class CallbackUtils:
         # Otherwise, just use absolute numbers
         return dff
 
+
     def get_state_stats(self, dff, percent=False) -> Tuple[np.int64, np.int64]:
         """Compute date-filtered dataframe totals"""
         # dataframe filterd to single day
         dff.copy()  # Shallow copy
 
-        atleast1_sum_state = dff["First Dose"].sum()
+        atleast1_sum_state = dff["First Dose"].sum() + dff["Single Dose"].sum()
         fully_sum_state = dff["Second Dose"].sum() + dff["Single Dose"].sum()
 
         if percent == True:
-            state_pop = self.census_data["Population"].sum()
+            state_pop = self.get_county_pop("State")
             atleast1_sum_state /= state_pop
             fully_sum_state /= state_pop
 
         return atleast1_sum_state, fully_sum_state
 
-    def get_county_pop(self, county_name: str) -> int:
-        """Match df.County on county name input str"""
-        return int(
-            self.census_data.loc[
-                self.census_data["County"] == county_name, "Population"
-            ].values
-        )
 
     def format_table(self, percent: bool = False):
         """Return dash_table formatting string based on boolean arg"""
