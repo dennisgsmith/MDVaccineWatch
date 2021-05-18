@@ -6,8 +6,9 @@ In this article, I go over my process of creating a dashboard application from s
 3. Container-izing everything with [Docker](https://docs.docker.com)
 4. Deploying the app on [Heroku](https://devcenter.heroku.com)
 
+### [https://mdvaccinewatch.herokuapp.com](https://mdvaccinewatch.herokuapp.com)
+
 ![Alt](images/mdvaxwatch_screencap.png)
-[https://mdvaccinewatch.herokuapp.com](https://mdvaccinewatch.herokuapp.com)
 
 # Overview
 I got the idea for this project while following along with a [Real Python tutorial on Dash](https://realpython.com/python-dash/). After completing the tutorial and reading through some of Dash and Plotly's documentation, I wanted to simply try mapping a vaccine data from a CSV file to county positions on a map box plot. I chose my home state of Maryland because it is:
