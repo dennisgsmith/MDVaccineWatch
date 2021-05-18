@@ -8,7 +8,6 @@ import pandas as pd
 from urllib.error import HTTPError
 
 
-
 class WriteData:
     def __init__(
         self,
@@ -20,10 +19,7 @@ class WriteData:
 
     # Clean up the data in pandas
     def clean_df(self, df: pd.DataFrame) -> Union[pd.DataFrame, None]:
-        """
-        clean pandas df and return transformed dataframe
-        ::df:: raw pandas dataframe before transform
-        """
+        """clean pandas df and return transformed dataframe"""
         # Clean and replace the file locally as backup
         try:
             # Drop daily columns
@@ -115,12 +111,7 @@ class WriteData:
         return True
 
     def update_s3(self, url: str, bucket_name: str) -> bool:
-        """
-        Upload Pandas df as csv to AWS S3
-        ::url:: CSV to retrieve data
-        ::s3_resource:: AWS s3 bucket connection
-        ::bucket_name:: name of AWS_S3 bucket
-        """
+        """Upload Pandas df as csv to AWS S3"""
         if not self.s3_resource:
             print("Must define s3_resource on class instantiation")
             return False

@@ -150,7 +150,6 @@ class CallbackUtils:
         # Otherwise, just use absolute numbers
         return dff
 
-
     def get_state_stats(self, dff, percent=False) -> Tuple[np.int64, np.int64]:
         """Compute date-filtered dataframe totals"""
         # dataframe filterd to single day
@@ -165,7 +164,6 @@ class CallbackUtils:
             fully_sum_state /= state_pop
 
         return atleast1_sum_state, fully_sum_state
-
 
     def format_table(self, percent: bool = False):
         """Return dash_table formatting string based on boolean arg"""

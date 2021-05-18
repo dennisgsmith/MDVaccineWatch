@@ -53,169 +53,172 @@ server = app.server
 PORT = int(os.getenv("PORT"))
 app.title = "#MDVaccineWatch"
 
+
 def serve_layout():
     return html.Div(
-    [
-        html.Div(
-            [
-                html.H1(
-                    [
-                        html.Span("#MD", id="header-title1"),
-                        html.Span("Vaccine", id="header-title2"),
-                        html.Span("Watch", id="header-title3"),
-                    ],
-                    className="header-title",
-                ),
-                html.P(
-                    ["Vaccine Data by County"],
-                    className="header-description",
-                ),
-            ],
-            className="header",
-        ),
-        html.Div(
-            [
-                html.Div(
-                    "For more information on the current phase of Maryland's vaccination plan,"
-                ),
-                html.A(
-                    "visit covidLINK.maryland.gov",
-                    href="https://covidlink.maryland.gov/content/vaccine/",
-                    target="_blank",
-                    className="covidLINK",
-                ),
-                # State stats
-                dcc.Markdown(id="state-stats"),
-                # Display date selected
-                dcc.Markdown(id="output-date-location"),
-                html.Div(
-                    DataTable(
-                        id="output-table",
-                        columns=[],
-                        data=[],
-                        column_selectable=False,
-                        style_table={"overflowX": "auto"},
-                        style_cell={
-                            "backgroundColor": "black",
-                            "color": "#ffffff",
-                            "textAlign": "center",
-                            "fontFamily": "'Open sans', sans-serif",
-                            "whiteSpace": "normal",
-                            "height": "auto",
-                        },
-                        style_header={"color": "#f1ba20", "font-weight": "bold"},
-                        style_data_conditional=[
-                            {  # override hot pink selected color
-                                "if": {"state": "active"},
-                                "backgroundColor": "black",
-                                "border": "3px solid white",
-                                "color": "white",
-                            }
+        [
+            html.Div(
+                [
+                    html.H1(
+                        [
+                            html.Span("#MD", id="header-title1"),
+                            html.Span("Vaccine", id="header-title2"),
+                            html.Span("Watch", id="header-title3"),
                         ],
+                        className="header-title",
                     ),
-                    className="table-container",
-                ),
-                html.Div(
-                    [
-                        html.Div(  # Dopdown menu
-                            [
-                                html.P(
-                                    "Filter map for type of dose:",
-                                    style={"color": "#ffffff"},
-                                ),
-                                dcc.Dropdown(
-                                    id="selected-dose",
-                                    options=[
-                                        {
-                                            "label": "Total at least one vaccine",
-                                            "value": "At Least One Vaccine",
-                                        },
-                                        {
-                                            "label": "Total fully vaccinated",
-                                            "value": "Fully Vaccinated",
-                                        },
-                                        {
-                                            "label": "Partially vaccinated (First Dose Only)",
-                                            "value": "First Dose",
-                                        },
-                                        {
-                                            "label": "Fully vaccinated (Second Dose Only)",
-                                            "value": "Second Dose",
-                                        },
-                                        {
-                                            "label": "Fully vaccinated (Single Dose Only)",
-                                            "value": "Single Dose",
-                                        },
-                                    ],
-                                    searchable=False,
-                                    clearable=False,
-                                    value="At Least One Vaccine",
-                                    optionHeight=25,
-                                ),
+                    html.P(
+                        ["Vaccine Data by County"],
+                        className="header-description",
+                    ),
+                ],
+                className="header",
+            ),
+            html.Div(
+                [
+                    html.Div(
+                        "For more information on the current phase of Maryland's vaccination plan,"
+                    ),
+                    html.A(
+                        "visit covidLINK.maryland.gov",
+                        href="https://covidlink.maryland.gov/content/vaccine/",
+                        target="_blank",
+                        className="covidLINK",
+                    ),
+                    # State stats
+                    dcc.Markdown(id="state-stats"),
+                    # Display date selected
+                    dcc.Markdown(id="output-date-location"),
+                    html.Div(
+                        DataTable(
+                            id="output-table",
+                            columns=[],
+                            data=[],
+                            column_selectable=False,
+                            style_table={"overflowX": "auto"},
+                            style_cell={
+                                "backgroundColor": "black",
+                                "color": "#ffffff",
+                                "textAlign": "center",
+                                "fontFamily": "'Open sans', sans-serif",
+                                "whiteSpace": "normal",
+                                "height": "auto",
+                            },
+                            style_header={"color": "#f1ba20", "font-weight": "bold"},
+                            style_data_conditional=[
+                                {  # override hot pink selected color
+                                    "if": {"state": "active"},
+                                    "backgroundColor": "black",
+                                    "border": "3px solid white",
+                                    "color": "white",
+                                }
                             ],
-                            className="dropdown-container",
                         ),
-                        html.Div(  # Radio buttons
-                            [
-                                html.P(
-                                    "Choose between absolute (population) and relative (percent of population):"
-                                ),
-                                dcc.RadioItems(
-                                    id="select-absolute-relative",
-                                    options=[
-                                        {"label": "Absolute\t", "value": "Absolute"},
-                                        {"label": "Relative", "value": "Relative"},
-                                    ],
-                                    value="Absolute",
-                                    persistence=True,
-                                ),
-                            ],
-                            className="radio-button-container",
-                        ),
-                        html.Div(  # Date Slider
-                            [
-                                html.P("Adjust the timeline slider:"),
-                                dcc.Slider(
-                                    id="selected-date-index"
-                                ),
-                            ],
-                            className="slider-container",
-                        ),
-                    ],
-                    className="flex-container",
-                ),  # Create Choropleth Mapbox
-                dcc.Graph(
-                    id="choropleth",
-                    config={"scrollZoom": False},
-                    className="coropleth-container",
-                ),
-                html.Div(
-                    [
-                        html.A("Sources:"),
-                        html.A(
-                            "GoeJSON",
-                            href="https://github.com/frankrowe/maryland-geojson/",
-                            target="_blank",
-                        ),
-                        html.A(
-                            "Maryland Vaccine Data",
-                            href="https://data.imap.maryland.gov/",
-                            target="_blank",
-                        ),
-                        html.A(
-                            "Maryland Census Data",
-                            href="https://www.census.gov/",
-                            target="_blank",
-                        ),
-                    ],
-                    className="sources",
-                ),
-            ],
-            className="wrapper",
-        ),
-        html.Button(id='btn', style={'display': 'none'})
-    ],
-)
+                        className="table-container",
+                    ),
+                    html.Div(
+                        [
+                            html.Div(  # Dopdown menu
+                                [
+                                    html.P(
+                                        "Filter map for type of dose:",
+                                        style={"color": "#ffffff"},
+                                    ),
+                                    dcc.Dropdown(
+                                        id="selected-dose",
+                                        options=[
+                                            {
+                                                "label": "Total at least one vaccine",
+                                                "value": "At Least One Vaccine",
+                                            },
+                                            {
+                                                "label": "Total fully vaccinated",
+                                                "value": "Fully Vaccinated",
+                                            },
+                                            {
+                                                "label": "Partially vaccinated (First Dose Only)",
+                                                "value": "First Dose",
+                                            },
+                                            {
+                                                "label": "Fully vaccinated (Second Dose Only)",
+                                                "value": "Second Dose",
+                                            },
+                                            {
+                                                "label": "Fully vaccinated (Single Dose Only)",
+                                                "value": "Single Dose",
+                                            },
+                                        ],
+                                        searchable=False,
+                                        clearable=False,
+                                        value="At Least One Vaccine",
+                                        optionHeight=25,
+                                    ),
+                                ],
+                                className="dropdown-container",
+                            ),
+                            html.Div(  # Radio buttons
+                                [
+                                    html.P(
+                                        "Choose between absolute (population) and relative (percent of population):"
+                                    ),
+                                    dcc.RadioItems(
+                                        id="select-absolute-relative",
+                                        options=[
+                                            {
+                                                "label": "Absolute\t",
+                                                "value": "Absolute",
+                                            },
+                                            {"label": "Relative", "value": "Relative"},
+                                        ],
+                                        value="Absolute",
+                                        persistence=True,
+                                    ),
+                                ],
+                                className="radio-button-container",
+                            ),
+                            html.Div(  # Date Slider
+                                [
+                                    html.P("Adjust the timeline slider:"),
+                                    dcc.Slider(id="selected-date-index"),
+                                ],
+                                className="slider-container",
+                            ),
+                        ],
+                        className="flex-container",
+                    ),  # Create Choropleth Mapbox
+                    dcc.Graph(
+                        id="choropleth",
+                        config={"scrollZoom": False},
+                        className="coropleth-container",
+                    ),
+                    html.Div(
+                        [
+                            html.A("Sources:"),
+                            html.A(
+                                "GoeJSON",
+                                href="https://github.com/frankrowe/maryland-geojson/",
+                                target="_blank",
+                            ),
+                            html.A(
+                                "Maryland Vaccine Data",
+                                href="https://data.imap.maryland.gov/",
+                                target="_blank",
+                            ),
+                            html.A(
+                                "Maryland Census Data",
+                                href="https://www.census.gov/",
+                                target="_blank",
+                            ),
+                        ],
+                        className="sources",
+                    ),
+                ],
+                className="wrapper",
+            ),
+            html.Button(id="btn", style={"display": "none"}),
+        ],
+    )
+
 
 app.layout = serve_layout
 
@@ -226,26 +229,22 @@ app.layout = serve_layout
 
 @app.callback(
     [
-        Output('selected-date-index', 'min'),
-        Output('selected-date-index', 'max'),
-        Output('selected-date-index', 'value'),
-        Output('selected-date-index', 'marks'),
+        Output("selected-date-index", "min"),
+        Output("selected-date-index", "max"),
+        Output("selected-date-index", "value"),
+        Output("selected-date-index", "marks"),
     ],
-    Trigger('btn', 'n_clicks')
+    Trigger("btn", "n_clicks"),
 )
 def render_slider(_):
     numdate = s3.get_numdate(df)
-    slider_min=numdate[0]
-    slider_max=numdate[-1]
-    slider_value=numdate[-1]
-    slider_marks={
+    slider_min = numdate[0]
+    slider_max = numdate[-1]
+    slider_value = numdate[-1]
+    slider_marks = {
         "label": "date",
-        numdate[0]: min(df["date"]).strftime(
-            "%m/%d/%Y"
-        ),
-        numdate[-1]: max(df["date"]).strftime(
-            "%m/%d/%Y"
-        )
+        numdate[0]: min(df["date"]).strftime("%m/%d/%Y"),
+        numdate[-1]: max(df["date"]).strftime("%m/%d/%Y"),
     }
     return slider_min, slider_max, slider_value, slider_marks
 
@@ -341,8 +340,6 @@ def display_stats(selected_date_index, clickData, selected_button):
     slider_date = cb.get_slider_date(df, selected_date_index)
     dt_slider_date = pd.to_datetime(str(slider_date))
     dff2 = cb.filter_by_date(df, slider_date)
-
-    print(dff2.columns)
 
     output_date_location = f"Date selected: **{dt_slider_date.strftime('%B %-d, %Y')}**"
 

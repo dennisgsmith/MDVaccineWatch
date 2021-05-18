@@ -19,6 +19,7 @@ services:
     container_name: mdvaccinewatch_scheduler_container
     build: ./scheduler
     environment:
+      - PYTHONFAULTHANDLER=1
       - DATABASE_URI
       - AWS_S3_BUCKET
       - AWS_DEFAULT_REGION
@@ -32,6 +33,7 @@ services:
     container_name: mdvaccinewatch_webapp_container
     build: ./app
     environment:
+      - PYTHONFAULTHANDLER=1
       - PYTHONUNBUFFERED="stout"
       - MB_TOKEN
       - DATABASE_URI

@@ -35,6 +35,7 @@ def main():
         print("SUCCESS: DB UPDATED")
     except:
         print("DATABASE APPEND FAILED")
+    # TODO: Implement webhook to update frontend after scheduled process
 
 
 if __name__ == "__main__":

@@ -1,16 +1,11 @@
-FROM python:3.8 AS web
+FROM python:3.8-slim-buster AS web
+RUN useradd --create-home appuser
+USER appuser
 
-
-COPY ./requirements.txt /webapp/requirements.txt
-
-WORKDIR /webapp
-
-RUN pip install --upgrade pip \
-    && pip install wheel \
-    && pip install -r requirements.txt
-
+WORKDIR /home/appuser
 COPY . .
-
+RUN pip install --user --upgrade pip \
+    && pip install --user wheel \
+    && pip install --user -r requirements.txt
 ENV PORT=8050
-
 ENTRYPOINT [ "./gunicorn_starter.sh" ]

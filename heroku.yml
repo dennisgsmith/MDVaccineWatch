@@ -9,8 +9,8 @@ setup:
     PORT: 8050
 build:
   docker:
-    web: app/Dockerfile
-    scheduler: scheduler/Dockerfile
+    web: home/appuser/Dockerfile
+    scheduler: home/appuser/Dockerfile
 run:
   web: gunicorn app:server
   scheduler: python main.py

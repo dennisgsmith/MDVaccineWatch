@@ -1,14 +1,10 @@
-FROM python:3.8 AS scheduler
+FROM python:3.8-slim-buster AS scheduler
+RUN useradd --create-home appuser
+USER appuser
 
-
-COPY ./requirements.txt /scheduler/requirements.txt
-
-WORKDIR /scheduler
-
-RUN pip install --upgrade pip \
-    && pip install wheel \
-    && pip install -r requirements.txt
-
+WORKDIR /home/appuser
 COPY . .
-
+RUN pip install --user --upgrade pip \
+    && pip install --user wheel \
+    && pip install --user -r requirements.txt
 CMD [ "python", "main.py" ]

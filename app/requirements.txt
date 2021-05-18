@@ -24,3 +24,4 @@ SQLAlchemy==1.4.11
 requests==2.25.1
 psycopg2-binary==2.8.6
 boto3==1.17.57
+dash-extensions==0.0.53
