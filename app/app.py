@@ -1,21 +1,16 @@
 import os
-
-from dotenv import load_dotenv
 import pandas as pd
 import plotly.express as px
-import dash
 from dash_table import DataTable
 import dash_core_components as dcc
 import dash_html_components as html
-from dash.dependencies import Input, Output
-from dash_extensions.enrich import Trigger
+from dash_extensions.enrich import Dash, Input, Output, Trigger, ServersideOutput
 
 from data_utils import CallbackUtils
 from data_utils import LoadS3
 
-load_dotenv()
-
 MB_TOKEN = os.getenv("MB_TOKEN")
+S3_FILE_NAME_NO_EXTENSION = os.getenv("S3_FILE_NAME_NO_EXTENSION")
 
 if MB_TOKEN:
     MB_STYLE = "dark"
@@ -28,13 +23,7 @@ else:
 # source: frankrowe GH (see README)
 geojson_s3 = LoadS3("maryland-counties.geojson")
 geojson_counties = geojson_s3.read_s3_geojson()
-
-
 cb = CallbackUtils()
-vax_data = LoadS3("MD_Vax_Data.csv")
-df = vax_data.etl_pipeline()
-
-# -----------------------------------------------------------------------------
 
 # Import CSS-referenced font
 external_stylesheets = [
@@ -44,7 +33,7 @@ external_stylesheets = [
     },
 ]
 # Compose app and generate HTML
-app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
+app = Dash(__name__, external_stylesheets=external_stylesheets)
 server = app.server
 PORT = int(os.getenv("PORT"))
 app.title = "#MDVaccineWatch"
@@ -53,6 +42,8 @@ app.title = "#MDVaccineWatch"
 def serve_layout():
     return html.Div(
         [
+            dcc.Store(id="store"),  # store holds the data
+            html.Div(id="onload"),  # trigger query function on page load
             html.Div(
                 [
                     html.H1(
@@ -223,6 +214,13 @@ app.layout = serve_layout
 # Callback functions
 
 
+@app.callback(ServersideOutput("store", "data"), Trigger("onload", "children"))
+def update_df():
+    vax_data = LoadS3(f"{S3_FILE_NAME_NO_EXTENSION}_clean.csv")
+    df = vax_data.etl_pipeline()
+    return df
+
+
 @app.callback(
     [
         Output("selected-date-index", "min"),
@@ -230,10 +228,10 @@ app.layout = serve_layout
         Output("selected-date-index", "value"),
         Output("selected-date-index", "marks"),
     ],
-    Trigger("btn", "n_clicks"),
+    Input("store", "data"),
 )
-def render_slider(_):
-    numdate = vax_data.get_numdate(df)
+def render_slider(df):
+    numdate = cb.get_numdate(df)
     slider_min = numdate[0]
     slider_max = numdate[-1]
     slider_value = numdate[-1]
@@ -251,10 +249,11 @@ def render_slider(_):
         Input("selected-date-index", "value"),
         Input("selected-dose", "value"),
         Input("select-absolute-relative", "value"),
+        Input("store", "data"),
     ],
 )
 def display_choropleth(
-    selected_date, selected_dose, selected_button
+    selected_date, selected_dose, selected_button, df
 ):  # Callback function
     """Diplay updated mapbox choropleth graph and date text when parameters are changed"""
 
@@ -325,9 +324,10 @@ def display_choropleth(
         Input("selected-date-index", "value"),
         Input("choropleth", "clickData"),
         Input("select-absolute-relative", "value"),
+        Input("store", "data"),
     ],
 )
-def display_stats(selected_date_index, clickData, selected_button):
+def display_stats(selected_date_index, clickData, selected_button, df):
     """Display additional data on county that is selected via click on the map"""
 
     print(clickData)

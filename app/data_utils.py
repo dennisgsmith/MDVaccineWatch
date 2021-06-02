@@ -2,16 +2,14 @@ import os
 import io
 from typing import Tuple
 import json
-from dotenv import load_dotenv
 
 import boto3
+import boto3.session
 import pandas as pd
 from dash_table import FormatTemplate
 from dash_table.Format import Format
 import sqlalchemy
 import numpy as np
-
-load_dotenv()
 
 AWS_S3_BUCKET = os.getenv("AWS_S3_BUCKET")
 AWS_DEFAULT_REGION = os.getenv("AWS_DEFAULT_REGION")
@@ -24,9 +22,11 @@ DATABASE_URI = os.getenv("DATABASE_URI")
 class LoadS3:
     def __init__(self, key: str):
         self.key = key
-        self.s3_resource = boto3.resource(
-            "s3", aws_access_key_id=ACCESS_ID, aws_secret_access_key=ACCESS_KEY
+        session = boto3.session.Session(
+            aws_access_key_id=ACCESS_ID,
+            aws_secret_access_key=ACCESS_KEY
         )
+        self.s3_resource = session.resource("s3")
         self.obj = self.s3_resource.meta.client.get_object(
             Bucket=AWS_S3_BUCKET, Key=self.key
         )
@@ -47,8 +47,11 @@ class LoadS3:
                 "firstdosecumulative": "First Dose",
                 "seconddosecumulative": "Second Dose",
                 "singledosecumulative": "Single Dose",
-                "fullyvaccinated": "Fully Vaccinated",
-                "atleastonevaccine": "At Least One Vaccine",
+                "fullvaccinatedcumulative": "Fully Vaccinated",
+                "atleastonedosecumulative": "At Least One Vaccine",
+                "firstdosedaily": "First Dose Daily",
+                "seconddosedaily": "Second Dose Daily",
+                "singledosedaily": "Single Dose Daily",
             },
             inplace=True,
         )
@@ -63,9 +66,6 @@ class LoadS3:
     def etl_pipeline(self) -> pd.DataFrame:
         df = self.read_s3_df()
         return self.prep_df(df)
-
-    def get_numdate(self, df: pd.DataFrame) -> int:
-        return [i for i in range(len(df["date"].unique()))]
 
 
 class LoadDb:
@@ -91,6 +91,9 @@ class CallbackUtils:
             "At Least One Vaccine",
             "Fully Vaccinated",
         ]
+
+    def get_numdate(self, df: pd.DataFrame) -> int:
+        return [i for i in range(len(df["date"].unique()))]
 
     def get_slider_date(
         self, df: pd.DataFrame, selected_date_index: int

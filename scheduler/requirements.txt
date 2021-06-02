@@ -16,4 +16,3 @@ psycopg2-binary==2.8.6
 SQLAlchemy==1.4.11
 requests==2.25.1
 boto3==1.17.57
-python-dotenv==0.17.1

@@ -7,18 +7,13 @@ services:
         image: mdvaccinewatch-scheduler:latest
         container_name: mdvaccinewatch_scheduler_container
         build: ./scheduler
-        environment:
-        - AWS_S3_BUCKET
+        env_file: .env
 
     # Build frantend webapp
     web:
         image: mdvaccinewatch-prod:latest
         container_name: mdvaccinewatch_webapp_container
         build: ./app
-        environment:
-        - PYTHONUNBUFFERED="stout"
-        - MB_TOKEN
-        - AWS_S3_BUCKET
-        - PORT
+        env_file: .env
         ports:
-        - 8080:80
+        - 8080:8080

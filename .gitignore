@@ -2,6 +2,7 @@
 .direnv
 .env
 .vscode
+file_system_store/
 
 # serverless.yml
 node_modules

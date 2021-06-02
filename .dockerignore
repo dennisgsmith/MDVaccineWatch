@@ -1,2 +1,4 @@
 .envrc
 .direnv
+.env
+file_system_store/
