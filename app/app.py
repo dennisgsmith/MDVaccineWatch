@@ -72,6 +72,9 @@ def serve_layout():
                         target="_blank",
                         className="covidLINK",
                     ),
+                    html.Div(
+                        "This data is inclusive of all demographics and age groups."
+                    ),
                     # State stats
                     dcc.Markdown(id="state-stats"),
                     # Display date selected
