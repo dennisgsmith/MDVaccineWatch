@@ -38,7 +38,9 @@ class WriteData:
             print("Could not convert columns to lowercase")
             return
 
-    def upload_df_to_s3_as_csv(self, df: pd.DataFrame, bucket_name: str, file_name_no_extension: str) -> bool:
+    def upload_df_to_s3_as_csv(
+        self, df: pd.DataFrame, bucket_name: str, file_name_no_extension: str
+    ) -> bool:
         """Upload a datafrom to a a given S3 bucket after creating resource in class"""
         try:
             csv_buffer = io.StringIO()
@@ -49,10 +51,15 @@ class WriteData:
             return True
 
         except:
-            print("ERROR: Could not upload raw to S3. Did you create an S3 resource when instantiating the class?")
+            print(
+                "ERROR: Could not upload raw to S3.",
+                "Did you create an S3 resource when instantiating the class?"
+            )
             return False
 
-    def update_s3_df(self, url: str, bucket_name: str, s3_file_name_no_extension: str) -> bool:
+    def update_s3_df(
+        self, url: str, bucket_name: str, s3_file_name_no_extension: str
+    ) -> bool:
         """Upload Pandas df as csv to AWS S3"""
         if not self.s3_resource:
             print("Must define s3_resource on class instantiation")
@@ -60,8 +67,10 @@ class WriteData:
         try:
             df = pd.read_csv(url)  # Pandas reads directly from URL input
             # Upload raw data into data lake for archiving
-            self.upload_df_to_s3_as_csv(df, bucket_name, f"{s3_file_name_no_extension}_raw.csv")
-            
+            self.upload_df_to_s3_as_csv(
+                df, bucket_name, f"{s3_file_name_no_extension}_raw.csv"
+            )
+
         except HTTPError as e:
             # TODO Email Admin with error summary
             print(e)
@@ -70,8 +79,10 @@ class WriteData:
         else:
             df = self.clean_df(df)
             # Upload clean data for use in web app
-            self.upload_df_to_s3_as_csv(df, bucket_name, f"{s3_file_name_no_extension}_clean.csv")
-        
+            self.upload_df_to_s3_as_csv(
+                df, bucket_name, f"{s3_file_name_no_extension}_clean.csv"
+            )
+
         return True
 
     def update_postgres_db(self, from_csv: bool = False) -> bool:

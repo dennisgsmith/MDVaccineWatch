@@ -23,8 +23,7 @@ class LoadS3:
     def __init__(self, key: str):
         self.key = key
         session = boto3.session.Session(
-            aws_access_key_id=ACCESS_ID,
-            aws_secret_access_key=ACCESS_KEY
+            aws_access_key_id=ACCESS_ID, aws_secret_access_key=ACCESS_KEY
         )
         self.s3_resource = session.resource("s3")
         self.obj = self.s3_resource.meta.client.get_object(
