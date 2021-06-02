@@ -1,7 +1,8 @@
 import os
 import io
-from pathlib import Path
 from typing import Tuple
+import json
+from dotenv import load_dotenv
 
 import boto3
 import pandas as pd
@@ -10,9 +11,7 @@ from dash_table.Format import Format
 import sqlalchemy
 import numpy as np
 
-
-FILES_DIR = Path(__file__).parent / "files"
-POP_EST_PATH = FILES_DIR / "Population_Estimates_by_County.csv"
+load_dotenv()
 
 AWS_S3_BUCKET = os.getenv("AWS_S3_BUCKET")
 AWS_DEFAULT_REGION = os.getenv("AWS_DEFAULT_REGION")
@@ -23,17 +22,21 @@ DATABASE_URI = os.getenv("DATABASE_URI")
 
 
 class LoadS3:
-    def __init__(self):
+    def __init__(self, key: str):
+        self.key = key
         self.s3_resource = boto3.resource(
             "s3", aws_access_key_id=ACCESS_ID, aws_secret_access_key=ACCESS_KEY
         )
-        self.vax_data_obj = self.s3_resource.meta.client.get_object(
-            Bucket=AWS_S3_BUCKET, Key="MD_Vax_Data.csv"
+        self.obj = self.s3_resource.meta.client.get_object(
+            Bucket=AWS_S3_BUCKET, Key=self.key
         )
+
+    def read_s3_geojson(self):
+        return json.load(io.BytesIO(self.obj["Body"].read()))
 
     def read_s3_df(self) -> pd.DataFrame:
         """Read data from S3 to Pandas DataFrame"""
-        return pd.read_csv(io.BytesIO(self.vax_data_obj["Body"].read()))
+        return pd.read_csv(io.BytesIO(self.obj["Body"].read()))
 
     def prep_df(self, df: pd.DataFrame) -> pd.DataFrame:
         """Transform Pandas DataFrame after csv read"""
@@ -78,9 +81,8 @@ class LoadDb:
 
 class CallbackUtils:
     def __init__(self):
-        self.census_data = pd.read_csv(
-            POP_EST_PATH.resolve(), dtype={"Population": int}
-        )
+        census_s3 = LoadS3("Population_Estimates_by_County.csv")
+        self.census_data = census_s3.read_s3_df()
         self.features = [
             "County",
             "First Dose",

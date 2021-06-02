@@ -1,46 +1,24 @@
 version: "3.9"
 
-# Use for local testing
 services:
 
-  # Initialize db
-  pgadmin:
-    container_name: pgadmin4_container
-    image: dpage/pgadmin4
-    restart: always
-    environment:
-      PGADMIN_DEFAULT_EMAIL: admin@admin.com
-      PGADMIN_DEFAULT_PASSWORD: root
-    ports:
-      - 5050:80
+    # Build scheduler to update s3
+    scheduler:
+        image: mdvaccinewatch-scheduler:latest
+        container_name: mdvaccinewatch_scheduler_container
+        build: ./scheduler
+        environment:
+        - AWS_S3_BUCKET
 
-  # Build scheduler to update database
-  scheduler:
-    container_name: mdvaccinewatch_scheduler_container
-    build: ./scheduler
-    environment:
-      - PYTHONFAULTHANDLER=1
-      - DATABASE_URI
-      - AWS_S3_BUCKET
-      - AWS_DEFAULT_REGION
-      - ACCESS_ID
-      - ACCESS_KEY
-    ports:
-      - 8080:8080
-
-  # Build frantend webapp
-  web:
-    container_name: mdvaccinewatch_webapp_container
-    build: ./app
-    environment:
-      - PYTHONFAULTHANDLER=1
-      - PYTHONUNBUFFERED="stout"
-      - MB_TOKEN
-      - DATABASE_URI
-      - AWS_S3_BUCKET
-      - AWS_DEFAULT_REGION
-      - ACCESS_ID
-      - ACCESS_KEY
-      # - PORT is defined in Dockerfile
-    ports:
-      - 8050:8050
+    # Build frantend webapp
+    web:
+        image: mdvaccinewatch-prod:latest
+        container_name: mdvaccinewatch_webapp_container
+        build: ./app
+        environment:
+        - PYTHONUNBUFFERED="stout"
+        - MB_TOKEN
+        - AWS_S3_BUCKET
+        - PORT
+        ports:
+        - 8080:80

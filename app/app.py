@@ -1,7 +1,6 @@
 import os
-import json
-from pathlib import Path
 
+from dotenv import load_dotenv
 import pandas as pd
 import plotly.express as px
 import dash
@@ -14,8 +13,7 @@ from dash_extensions.enrich import Trigger
 from data_utils import CallbackUtils
 from data_utils import LoadS3
 
-
-FILES_DIR = Path(__file__).parent / "files"
+load_dotenv()
 
 MB_TOKEN = os.getenv("MB_TOKEN")
 
@@ -28,15 +26,13 @@ else:
 
 # Get Maryland counties layer as geojson
 # source: frankrowe GH (see README)
-GEOJSON_PATH = FILES_DIR / "maryland-counties.geojson"
+geojson_s3 = LoadS3("maryland-counties.geojson")
+geojson_counties = geojson_s3.read_s3_geojson()
 
-# Load GeoJSON from local data file
-with open(GEOJSON_PATH.resolve()) as f:
-    geojson_counties = json.load(f)
 
 cb = CallbackUtils()
-s3 = LoadS3()
-df = s3.etl_pipeline()
+vax_data = LoadS3("MD_Vax_Data.csv")
+df = vax_data.etl_pipeline()
 
 # -----------------------------------------------------------------------------
 
@@ -237,7 +233,7 @@ app.layout = serve_layout
     Trigger("btn", "n_clicks"),
 )
 def render_slider(_):
-    numdate = s3.get_numdate(df)
+    numdate = vax_data.get_numdate(df)
     slider_min = numdate[0]
     slider_max = numdate[-1]
     slider_value = numdate[-1]

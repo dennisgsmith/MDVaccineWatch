@@ -1,6 +1,11 @@
-# Local
-.mapbox_token
-mock_data.csv
+.envrc
+.direnv
+.env
+.vscode
+
+# serverless.yml
+node_modules
+package*
 
 # venv
 .envrc

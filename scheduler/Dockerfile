@@ -1,10 +1,8 @@
-FROM python:3.8-slim-buster AS scheduler
-RUN useradd --create-home appuser
-USER appuser
+FROM amazon/aws-lambda-python:3.8.2021.05.27.08 AS scheduler
 
-WORKDIR /home/appuser
+WORKDIR /scheduler
 COPY . .
-RUN pip install --user --upgrade pip \
-    && pip install --user wheel \
-    && pip install --user -r requirements.txt
-CMD [ "python", "main.py" ]
+RUN pip install --upgrade pip \
+    && pip install wheel \
+    && pip install -r requirements.txt
+CMD [ "main.main" ]
