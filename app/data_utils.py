@@ -13,8 +13,8 @@ import numpy as np
 
 AWS_S3_BUCKET = os.getenv("AWS_S3_BUCKET")
 AWS_DEFAULT_REGION = os.getenv("AWS_DEFAULT_REGION")
-ACCESS_ID = os.getenv("ACCESS_ID")
-ACCESS_KEY = os.getenv("ACCESS_KEY")
+ACCESS_ID = os.getenv("AWS_ACCESS_KEY_ID")
+ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
 
 DATABASE_URI = os.getenv("DATABASE_URI")
 

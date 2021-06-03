@@ -11,8 +11,8 @@ services:
 
     # Build frantend webapp
     web:
-        image: mdvaccinewatch-prod:latest
-        container_name: mdvaccinewatch_webapp_container
+        image: mdvaccinewatch-web:latest
+        container_name: mdvaccinewatch_web_container
         build: ./app
         env_file: .env
         ports:

@@ -4,8 +4,8 @@ import boto3.session
 from helpers import WriteData
 
 DATA_URL = "https://opendata.arcgis.com/datasets/89c9c1236ca848188d93beb5928f4162_0.csv"
-ACCESS_ID = os.getenv("ACCESS_ID")
-ACCESS_KEY = os.getenv("ACCESS_KEY")
+ACCESS_ID = os.getenv("AWS_ACCESS_KEY_ID")
+ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
 AWS_S3_BUCKET = os.getenv("AWS_S3_BUCKET")
 S3_FILE_NAME_NO_EXTENSION = os.getenv("S3_FILE_NAME_NO_EXTENSION")
 
