@@ -3,6 +3,7 @@
 .env
 .vscode
 file_system_store/
+fargate_cfn-template-3.yaml
 
 # serverless.yml
 node_modules
