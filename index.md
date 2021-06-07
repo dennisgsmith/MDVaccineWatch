@@ -6,7 +6,9 @@ In this article, I go over my process of creating a dashboard application from s
 3. Container-izing everything with [Docker](https://docs.docker.com)
 4. Deploying the app on [Heroku](https://devcenter.heroku.com)
 
-### [https://mdvaccinewatch.herokuapp.com](https://mdvaccinewatch.herokuapp.com)
+EDIT (June 7th 2021): Since writing this article, I had moved the web and scheduler processes to AWS's Fargate and Lambda services, respectively. As of June 1st, the database is no longer being updated, hence the scheduler process has been terminated.
+
+### [http://mdvaccinewatch.com](http://mdvaccinewatch.com)
 
 ![Alt](images/mdvaxwatch_screencap.png)
 

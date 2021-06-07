@@ -5,3 +5,6 @@ scheduler/
 .direnv
 .envrc
 .DS_Store
+.env
+file_system_store/
+*DS_Store*
