@@ -5,4 +5,4 @@ WORKDIR /webapp
 RUN pip install --upgrade pip \
     && pip install wheel \
     && pip install -r requirements.txt
-CMD [ "gunicorn", "--bind", "0.0.0.0:8080", "app:server" ]
+CMD [ "gunicorn", "--bind", "0.0.0.0:8080", "app:server", "--timeout", "1000" ]

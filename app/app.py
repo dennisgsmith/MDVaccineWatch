@@ -1,4 +1,6 @@
 import os
+import logging
+from logging.handlers import TimedRotatingFileHandler
 import pandas as pd
 import plotly.express as px
 from dash_table import DataTable
@@ -9,13 +11,34 @@ from dash_extensions.enrich import Dash, Input, Output, Trigger, ServersideOutpu
 from data_utils import CallbackUtils
 from data_utils import LoadS3
 
+# Logging config
+logger = logging.getLogger(__name__)
+
+# Delete old logs
+handler = TimedRotatingFileHandler(
+    filename='runtime.log', 
+    when='D', interval=1, 
+    backupCount=90, 
+    encoding='utf-8', 
+    delay=False
+)
+
+# Logging formatter for handler and add handler to logger
+formatter = logging.Formatter(fmt='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+handler.setFormatter(formatter)
+logger.addHandler(handler)
+
+# Set logging level
+logger.setLevel(logging.INFO)
+
 MB_TOKEN = os.getenv("MB_TOKEN")
 S3_FILE_NAME_NO_EXTENSION = os.getenv("S3_FILE_NAME_NO_EXTENSION")
 
+# Default to non-token theme if secret env variable is not available
 if MB_TOKEN:
     MB_STYLE = "dark"
 else:
-    print("Using mapbox theme that does not require token")
+    logging.debug("Using mapbox theme that does not require token")
     MB_TOKEN = None
     MB_STYLE = "carto-darkmatter"
 
@@ -34,10 +57,14 @@ external_stylesheets = [
 ]
 # Compose app and generate HTML
 app = Dash(__name__, external_stylesheets=external_stylesheets)
-server = app.server
-PORT = int(os.getenv("PORT"))
-app.title = "#MDVaccineWatch"
 
+# The server variable will be referenced late by the Gunicorn WSGI
+server = app.server
+
+# This makes it easier to change PORT without having to reupload a new revision of the app
+PORT = int(os.getenv("PORT"))
+
+app.title = "#MDVaccineWatch"
 
 def serve_layout():
     return html.Div(
@@ -74,6 +101,9 @@ def serve_layout():
                     ),
                     html.Div(
                         "This data is inclusive of all demographics and age groups."
+                    ),
+                    html.Div(
+                        "As of June 1st, 2021, this database is no longer being updated."
                     ),
                     # State stats
                     dcc.Markdown(id="state-stats"),
@@ -210,6 +240,7 @@ def serve_layout():
     )
 
 
+# Add HTML to app object attibute
 app.layout = serve_layout
 
 # -----------------------------------------------------------------------------
@@ -260,9 +291,9 @@ def display_choropleth(
 ):  # Callback function
     """Diplay updated mapbox choropleth graph and date text when parameters are changed"""
 
-    print(selected_date, type(selected_date))
-    print(selected_dose, type(selected_dose))
-    print(selected_button, type(selected_button))
+    logging.debug(selected_date, type(selected_date))
+    logging.debug(selected_dose, type(selected_dose))
+    logging.debug(selected_button, type(selected_button))
 
     slider_date = cb.get_slider_date(df, selected_date)
 
@@ -333,8 +364,8 @@ def display_choropleth(
 def display_stats(selected_date_index, clickData, selected_button, df):
     """Display additional data on county that is selected via click on the map"""
 
-    print(clickData)
-    print(type(clickData))
+    logging.debug(clickData)
+    logging.debug(type(clickData))
 
     slider_date = cb.get_slider_date(df, selected_date_index)
     dt_slider_date = pd.to_datetime(str(slider_date))
